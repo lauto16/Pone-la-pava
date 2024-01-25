@@ -33,6 +33,11 @@ INSTALLED_APPS = [
 ASGI_APPLICATION = "Mate.asgi.application"
 WSGI_APPLICATION = 'Mate.wsgi.application'
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 MIDDLEWARE = [
 
@@ -68,8 +73,12 @@ TEMPLATES = [
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'Mate',
+        'USER': 'root',
+        'PASSWORD': 'lauty1234',
+        'HOST': 'localhost',
+        'PORT': ''
     }
 }
 

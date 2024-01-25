@@ -12,6 +12,12 @@
 </head>
 
 <body>
+    <div class="div-errores" id="div-errores">
+        <div class="exclamacion">
+            <p id="p-exclamacion">!</p>
+        </div>
+        <p id="p-errores"></p>
+    </div>
     <div class="modal-create-room" id="modal-create-room">
         <div class="close-modal">
             <button id="close-modal">
@@ -20,15 +26,15 @@
         </div>
         <form action="" id="form-create-room">
             <div class="container-inputs-modal">
-                <input type="text" placeholder="¿Como te llam&aacute;s?" name="room-name" id="input-room-name"
+                <input type="text" placeholder="¿Como te llam&aacute;s?" name="user_name" id="input-room-name"
                     class="input-form">
-                <input type="text" placeholder="Nombre de la sala" name="room-name" id="input-room-name"
+                <input type="text" placeholder="Nombre de la sala" name="room_name" id="input-room-name"
                     class="input-form">
-                <input type="text" placeholder="Codigo de la sala" name="room-code" id="input-room-code"
+                <input type="text" placeholder="Codigo de la sala" name="room_code" id="input-room-code"
                     class="input-form">
 
                 <label id="label-range-form" for="people-amount">Integrantes</label>
-                <input name="people-amount" type="range" id="input-people-amount" class="input-form-range" min="2"
+                <input name="people_amount" type="range" id="input-people-amount" class="input-form-range" min="2"
                     max="15">
             </div>
 

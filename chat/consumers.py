@@ -1,5 +1,6 @@
 import json
 from asgiref.sync import async_to_sync
+from Mate.utils import createRoomRegister
 from channels.generic.websocket import WebsocketConsumer
 
 
@@ -7,11 +8,12 @@ class ChatConsumer(WebsocketConsumer):
 
     def connect(self):
 
-        # nombre de la sala
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.room_group_name = f"chat_{self.room_name}"
+        self.room_code = self.scope['url_route']['kwargs']['room_code']
+        self.room_group_name = f"chat_{self.room_code}"
 
-        # añadir al usuario (channel_layer) a el grupo
+        if hasattr(self, 'room_group_name'):
+            self.disconnect(3001)
+
         async_to_sync(self.channel_layer.group_add)(
             self.room_group_name,
 
@@ -33,16 +35,22 @@ class ChatConsumer(WebsocketConsumer):
     def receive(self, text_data):
 
         text_data_json = json.loads(text_data)
-        message = text_data_json['message']
+        user_name = text_data_json['user_name']
+        room_name = text_data_json['room_name']
+        room_code = text_data_json['room_code']
+        people_amount = text_data_json['people_amount']
 
-        # enviar el mensaje a todos los users que se encuentren
-        # en la room
+        if int(people_amount) > 15:
+            people_amount = 15
+
+        createRoomRegister(name=room_name, code=room_code,
+                           user_name=user_name, people_amount=int(people_amount))
 
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': message
+                'message': text_data_json
             }
         )
 
