@@ -12,11 +12,13 @@
 </head>
 
 <body>
-    <div class="div-errores" id="div-errores">
-        <div class="exclamacion">
-            <p id="p-exclamacion">!</p>
+    <div class="div-errors" id="div-errors">
+        <div class="exclamation">
+            <p id="p-exclamation">!</p>
         </div>
-        <p id="p-errores"></p>
+        <div class="errors">
+            <p id="p-errors"></p>
+        </div>
     </div>
     <div class="modal-create-room" id="modal-create-room">
         <div class="close-modal">
@@ -104,6 +106,10 @@
     </div>
 </body>
 
+<script src="{% static 'js/jquery.js' %}"></script>
 <script src="{% static 'js/index.js' %}"></script>
+<script>
+    errorHandler()
+</script>
 
 </html>

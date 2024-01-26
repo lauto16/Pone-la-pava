@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/login_register.css' %}">
+    <title>Pone la pava</title>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1 id="h1-logo">
+                    Pone <strong id="strong-logo">la pava</strong>
+                </h1>
+            </div>
+        </header>
+        <main>
+            <section class="description">
+                <h1 id="title-description">¿Que es Pone la pava?</h1>
+                <div id="content-description">
+                    <strong>
+                        ¡Bienvenido a Pon&eacute;
+                        la pava!</strong> divertite con tus amigos a través de
+                    nuestras salas virtuales. Compart&iacute;
+                    mates, organiz&aacute;
+                    encuentros con la banda, vot&aacute;
+                    en las encuestas, y descubr&iacute;
+                    nuestra lista de experiencia
+                    auténticas. En <strong>Pone la pava</strong>, el chisme y la
+                    chispa argentina nunca se
+                    apaga.
+                    ¡Conect&aacute;
+                    , vot&aacute;
+                    , compart&iacute;
+                    y disfrut&aacute;
+                    de la esencia argentina en un solo lugar!
+                </div>
+            </section>
+            <section class="register-login">
+                <div class="container-text-form">
+                    <h3 id="title-register-login"><strong>Creaci&oacute;n de cuenta</strong></h3>
+                    <p id="p-sign">¿Ya tienes una cuenta? <a id="a-sign" href="/login">Crea una</a></p>
+                </div>
+                <form class="form-centered" method="post">
+
+                    {% csrf_token %}
+                    {{ form.as_p }}
+
+                    <div class="send-button">
+                        <input class="button" type="submit" value="Enviar">
+                    </div>
+
+                    <div class="errors">
+                        {% if not error_bd %}
+                        <p>{{ datos_error }}</p>
+                        {% endif %}
+
+                        {% if error %}
+                        <div class="list-errors-div">
+                            <ul class="list-errors">
+                                {% for message in error %}
+                                <li>{{ message }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                </form>
+            </section>
+            <footer>
+
+            </footer>
+        </main>
+    </div>
+</body>
+
+</html>

@@ -13,27 +13,27 @@ function sleep(ms) {
 
 
 async function errorHandler(error) {
-    const div_errores = document.getElementById("div-errores")
-    const p_errores = document.getElementById("p-errores")
+    const div_errors = document.getElementById("div-errors")
+    const p_errors = document.getElementById("p-errors")
 
     if (error) {
 
-        div_errores.setAttribute('style', 'display:inline-block')
-        p_errores.setAttribute('style', 'display:inline-block')
-        p_errores.textContent = error
+        div_errors.setAttribute('style', 'display:inline-block')
+        p_errors.setAttribute('style', 'display:inline-block')
+        p_errors.textContent = error
 
         await sleep(3000)
 
-        $("#div-errores").fadeOut("slow", function () {
-            div_errores.setAttribute('style', 'display:none')
-            p_errores.setAttribute('style', 'display:none')
+        $("#div-errors").fadeOut("slow", function () {
+            div_errors.setAttribute('style', 'display:none')
+            p_errors.setAttribute('style', 'display:none')
         });
 
 
     }
     else {
-        div_errores.setAttribute('style', 'display:none')
-        p_errores.setAttribute('style', 'display:none')
+        div_errors.setAttribute('style', 'display:none')
+        p_errors.setAttribute('style', 'display:none')
     }
 }
 
