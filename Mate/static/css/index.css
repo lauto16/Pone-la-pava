@@ -149,6 +149,29 @@ strong {
     transform: translate(0em, 0.2em);
 }
 
+/* MODAL JOIN ROOM */
+
+.modal-join-room {
+    display: none;
+    z-index: 1;
+    width: 42%;
+    height: 55%;
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    transform: translate(-50%, -50%);
+    max-height: 100%;
+    overflow-y: auto;
+    background-color: #161A30;
+    border: 1px solid #231f4b;
+}
+
+#form-join-room {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+}
+
 /* MODAL CREATE ROOM */
 
 .modal-create-room {
@@ -170,7 +193,6 @@ strong {
     text-align: center;
     display: flex;
     flex-direction: column;
-    height: 95%;
 }
 
 .close-modal {
@@ -180,7 +202,8 @@ strong {
 }
 
 /* close button */
-#close-modal {
+#close-modal-create,
+#close-modal-join {
     background-color: transparent;
     color: #fff;
     float: right;
@@ -191,7 +214,8 @@ strong {
     border: 0px;
 }
 
-#close-modal:hover {
+#close-modal-create,
+#close-modal-join:hover {
     opacity: 0.5;
     cursor: pointer;
 }

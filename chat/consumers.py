@@ -1,58 +1,137 @@
 import json
+from Mate.utils import verifiedSocket
 from asgiref.sync import async_to_sync
-from Mate.utils import createRoomRegister
+from django.contrib.auth.models import User
+from channels.exceptions import DenyConnection, StopConsumer
 from channels.generic.websocket import WebsocketConsumer
+from Mate.utils import createRoomRegister, roomExists, updateConnection, isConnected
 
 
 class ChatConsumer(WebsocketConsumer):
 
+    """
+    connect: recibe 2 tipos de peticiones: 
+        -create -> valida que todo el usuario cumpla los requerimientos
+                   y que los argumentos de creacion sean correctos mediante 
+                   verifiedSocket, crea una nueva room, la agrega a la BD
+
+        -join -> valida que el usuario no se encuentre ya en una room, luego
+        verifica que la room exista en la base de datos, agrega al usuario a la
+        room y modifica el registro de Connected (donde se almacena la room en la
+        que se encuentra el usuario)
+
+
+    disconnect: obtiene los datos de la room actual mediante isConnected y cierra la conexion,
+                luego resetea Connection y hace raise StopConsumer para detener la clase
+
+
+    receive: recibe los datos del frontend, tiene 2 peticiones:
+            - 'delete_socket' -> desconecta al usuario del socket
+            - 'chat_message' -> recepcion y reenvio de mensajes al front  si el usuario esta 
+                                conectado y el mensaje no esta vacio
+
+    get_user: obtiene el usuario que envio la peticion
+
+    """
+
     def connect(self):
 
-        self.room_code = self.scope['url_route']['kwargs']['room_code']
-        self.room_group_name = f"chat_{self.room_code}"
+        self.action = self.scope['url_route']['kwargs']['action']
+        self.user = self.get_user(self.scope)
+        self.room_code = 0
 
-        if hasattr(self, 'room_group_name'):
-            self.disconnect(3001)
+        if self.action == 'create':
 
-        async_to_sync(self.channel_layer.group_add)(
-            self.room_group_name,
+            received_room_name = self.scope['url_route']['kwargs']['room_name_code']
+            received_people_amount = self.scope['url_route']['kwargs']['people_amount']
 
-            # nombre del canal, se crea automatico para cada user
-            self.channel_name
-        )
+            validator = verifiedSocket(
+                user=self.user, people_amount=received_people_amount, room_name=received_room_name)
 
-        self.accept()
+            if validator.output():
+
+                self.room_code = validator.socket_code
+                self.room_name = validator.room_name
+                self.people_amount = validator.people_amount
+
+                async_to_sync(self.channel_layer.group_add)(
+                    self.room_code,
+                    self.channel_name
+                )
+
+                response_oncreate = createRoomRegister(
+                    name=self.room_name,
+                    code=self.room_code,
+                    user=self.user,
+                    people_amount=self.people_amount
+                )
+
+                if not (response_oncreate):
+                    raise DenyConnection
+
+            else:
+                raise DenyConnection
+
+        if self.action == 'join':
+
+            response_is_connected = isConnected(user=self.user)
+
+            if response_is_connected['state'] == False:
+                self.room_code = self.scope['url_route']['kwargs']['room_name_code']
+
+                if roomExists(self.room_code):
+
+                    async_to_sync(self.channel_layer.group_add)(
+                        self.room_code,
+                        self.channel_name
+                    )
+
+                    self.accept()
+
+                    updateConnection(
+                        user=self.user, channel_name=self.channel_name, code_room=self.room_code, state=True)
+
+            else:
+                return
 
     def disconnect(self, close_code):
 
-        # Salir del grupo de la sala
-        self.channel_layer.group_discard(
+        disconnect_data = isConnected(user=self.user)
 
-            self.room_group_name,
-            self.channel_name
-        )
+        if disconnect_data['connected_room_code'] in self.channel_layer.groups:
+            async_to_sync(self.channel_layer.group_discard)(
+                disconnect_data['connected_room_code'],
+                disconnect_data['connected_channel_name']
+            )
+
+        updateConnection(
+            user=self.user, channel_name="", code_room="", state=False)
+
+        raise StopConsumer
 
     def receive(self, text_data):
 
         text_data_json = json.loads(text_data)
-        user_name = text_data_json['user_name']
-        room_name = text_data_json['room_name']
-        room_code = text_data_json['room_code']
-        people_amount = text_data_json['people_amount']
 
-        if int(people_amount) > 15:
-            people_amount = 15
+        if text_data_json['type'] == 'delete_socket':
+            self.disconnect(close_code=1000)
 
-        createRoomRegister(name=room_name, code=room_code,
-                           user_name=user_name, people_amount=int(people_amount))
+        else:
+            if isConnected(self.user)['state'] == True:
+                message = text_data_json['message']
 
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': text_data_json
-            }
-        )
+                if len(message) < 1:
+                    return
+
+                connection = isConnected(user=self.user)
+
+                async_to_sync(self.channel_layer.group_send)(
+                    connection['connected_room_code'],
+                    {
+                        'type': 'chat_message',
+                        'message': message
+                    }
+                )
 
     def chat_message(self, event):
 
@@ -62,3 +141,10 @@ class ChatConsumer(WebsocketConsumer):
             'type': 'chat',
             'message': message
         }))
+
+    def get_user(self, scope):
+
+        user = None
+        if scope['user'].is_authenticated:
+            user = scope['user']
+        return user

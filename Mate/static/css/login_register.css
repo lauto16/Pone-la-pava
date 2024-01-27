@@ -178,15 +178,15 @@ input[type="password"] {
 
 
 .list-errors-div {
+    font-family: 'Kanit', sans-serif;
     display: table;
     margin-left: auto;
     margin-right: auto;
-    margin-top: 20px;
+    margin-top: 5px;
     text-align: center;
 }
 
 .errors {
-    margin-top: 20px;
     color: #f78b94;
 
 }

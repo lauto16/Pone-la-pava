@@ -20,21 +20,24 @@
             <p id="p-errors"></p>
         </div>
     </div>
+
+    <form id="form-send-message">
+        <input type="text" id="message-input" placeholder="Type your message here">
+        <button type="submit">Send</button>
+    </form>
+
+    <ul id="chat-messages"></ul>
+
     <div class="modal-create-room" id="modal-create-room">
         <div class="close-modal">
-            <button id="close-modal">
+            <button id="close-modal-create">
                 <strong>X</strong>
             </button>
         </div>
         <form action="" id="form-create-room">
             <div class="container-inputs-modal">
-                <input type="text" placeholder="¿Como te llam&aacute;s?" name="user_name" id="input-room-name"
-                    class="input-form">
                 <input type="text" placeholder="Nombre de la sala" name="room_name" id="input-room-name"
                     class="input-form">
-                <input type="text" placeholder="Codigo de la sala" name="room_code" id="input-room-code"
-                    class="input-form">
-
                 <label id="label-range-form" for="people-amount">Integrantes</label>
                 <input name="people_amount" type="range" id="input-people-amount" class="input-form-range" min="2"
                     max="15">
@@ -47,7 +50,7 @@
                     </button>
                 </div>
                 <div class="join-room">
-                    <button id="cancel-room-modal" class="cancel-room-modal">
+                    <button id="cancel-create-modal" class="cancel-room-modal">
                         <p>Cancelar</p>
                     </button>
                 </div>
@@ -55,6 +58,37 @@
 
         </form>
     </div>
+
+    <div class="modal-join-room" id="modal-join-room">
+        <div class="close-modal">
+            <button id="close-modal-join">
+                <strong>X</strong>
+            </button>
+        </div>
+        <form action="" id="form-join-room">
+            <div class="container-inputs-modal">
+                <input type="text" placeholder="Codigo de la sala" name="room_code_join" id="input-room-code"
+                    class="input-form">
+            </div>
+
+            <div class="container-buttons">
+                <div class="join-room">
+                    <button id="join-room-modal" type="submit" class="button-room">
+                        Unirse
+                    </button>
+                </div>
+                <div class="join-room">
+                    <button id="cancel-join-modal" class="cancel-room-modal">
+                        <p>Cancelar</p>
+                    </button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+    <button id="button-close-connection">
+        CLOSE CONNECTION
+    </button>
     <div class="container">
         <header>
             <div class="logo">

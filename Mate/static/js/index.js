@@ -1,10 +1,21 @@
 const modal_create_room = document.getElementById('modal-create-room')
+const modal_join_room = document.getElementById('modal-join-room')
+
 const button_create_room = document.getElementById('create-room-button')
-const button_cancel_room = document.getElementById('cancel-room-modal')
-const button_close_form = document.getElementById('close-modal')
+const button_cancel_create = document.getElementById('cancel-create-modal')
+const button_cancel_join = document.getElementById('cancel-join-modal')
+const button_close_create = document.getElementById('close-modal-create')
+const button_close_join = document.getElementById('close-modal-join')
+const create_room_button_modal = document.getElementById('create-room-modal')
+const join_room_button = document.getElementById('join-room-button')
+const button_close_connection = document.getElementById('button-close-connection')
+
 const range_form = document.getElementById('input-people-amount');
 const label_range_form = document.getElementById('label-range-form');
-const create_room_button_modal = document.getElementById('create-room-modal')
+
+const form_create = document.getElementById('form-create-room')
+const form_join = document.getElementById('form-join-room')
+const form_send_message = document.getElementById('form-send-message')
 
 
 function sleep(ms) {
@@ -88,61 +99,111 @@ function redirectRoom(data) {
 }
 
 
-let form = document.getElementById('form-create-room')
+let joinSocket;
 
-let chatSocket;
 
-function createRoomAndConnect(message) {
+function joinRoom(message) {
 
-    if (chatSocket) {
-        chatSocket.close();
+    const messageInput = document.getElementById('message-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    joinSocket = new WebSocket(`ws://localhost:8000/ws/chat/join/${message['room_code']}/0`);
+
+    joinSocket.onopen = function (event) {
+        console.log('connection opened(join)');
     }
 
-    chatSocket = new WebSocket(`ws://${window.location.host}/ws/socket-server/room/${message['room_code']}/`);
-
-    chatSocket.onopen = function (event) {
-        chatSocket.send(JSON.stringify(message));
-    };
-
-
-    chatSocket.onmessage = function (event) {
-        let data = JSON.parse(event.data);
-
-        if (data.type === 'chat') {
-            redirectRoom(data)
-        }
-
-    };
-
-    chatSocket.onclose = function (event) {
+    joinSocket.onclose = function (event) {
         console.log('WebSocket connection closed.');
-    };
+    }
 
-    chatSocket.onerror = function (error) {
-        console.error('error del websocket')
-    };
+    joinSocket.onmessage = function (event) {
+        const message = JSON.parse(event.data);
+        console.log(message)
+        const li = document.createElement('li');
+        li.textContent = message.message;
+        chatMessages.appendChild(li);
+    }
+
+
+    form_send_message.addEventListener('submit', function (event) {
+
+        event.preventDefault();
+        const message = messageInput.value;
+
+        console.log("mensaje: ", message, " enviado!")
+
+        joinSocket.send(JSON.stringify({ type: 'chat_message', message: message }));
+        form_send_message.reset()
+    })
 }
 
 
-form.addEventListener('submit', function (e) {
-    e.preventDefault();
+let createSocket;
+
+
+function createRoom(message) {
+    createSocket = new WebSocket(`ws://localhost:8000/ws/chat/create/${message['room_name']}/${message['people_amount']}`);
+
+    createSocket.onopen = function (event) {
+        console.log('connection opened(create)')
+    }
+
+}
+
+
+form_join.addEventListener('submit', function (e) {
+
+    e.preventDefault()
+
+    let room_code = document.getElementById('input-room-code').value
+
     let message = {
-        'user_name': e.target.user_name.value,
-        'room_name': e.target.room_name.value,
-        'room_code': e.target.room_code.value,
-        'people_amount': e.target.people_amount.value
+        room_code: room_code
+    }
+
+    try {
+        joinSocket.close()
+    } catch (error) {
+        //
+    }
+
+    joinRoom(message)
+    form_join.reset();
+})
+
+
+form_create.addEventListener('submit', function (e) {
+
+    e.preventDefault();
+
+    let room_name = document.getElementById('input-room-name').value
+    let people_amount = document.getElementById('input-people-amount').value
+
+    let message = {
+        room_name: room_name,
+        people_amount: people_amount
     };
-    // Llamar a la función para crear la sala y establecer la conexión WebSocket
-    createRoomAndConnect(message);
-    form.reset();
-});
+
+    createRoom(message);
+    form_create.reset();
+
+})
 
 
-
-button_close_form.addEventListener('click', function (e) {
+button_close_create.addEventListener('click', function (e) {
     modal_create_room.style.display = 'none'
 })
 
+
+button_close_join.addEventListener('click', function (e) {
+    modal_join_room.style.display = 'none'
+})
+
+
+join_room_button.addEventListener('click', function (e) {
+    modal_join_room.style.display = 'block'
+})
 
 
 button_create_room.addEventListener('click', function () {
@@ -150,13 +211,25 @@ button_create_room.addEventListener('click', function () {
 })
 
 
-button_cancel_room.addEventListener('click', function (e) {
+button_cancel_create.addEventListener('click', function (e) {
     e.preventDefault()
     modal_create_room.style.display = 'none'
 })
 
 
+button_cancel_join.addEventListener('click', function (e) {
+    e.preventDefault()
+    modal_join_room.style.display = 'none'
+})
 
+
+button_close_connection.addEventListener('click', function () {
+    let message = ""
+    try {
+        joinSocket.send(JSON.stringify({ type: 'delete_socket', message: message }));
+    } catch (error) {
+    }
+})
 
 
 range_form.addEventListener('input', function () {

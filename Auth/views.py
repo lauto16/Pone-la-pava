@@ -3,6 +3,7 @@ from django.contrib.auth import login
 from Mate.forms import Login, Register
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
+from chat.models import RoomIntances, Connected
 
 
 def register_view(request):
@@ -35,16 +36,20 @@ def register_view(request):
 
                         try:
                             password = passwordHashing(password)
-                            User.objects.create(
+                            new_user = User.objects.create(
                                 username=usuario, email=email, password=password)
+
+                            RoomIntances.objects.create(
+                                user=new_user, room_instances=0)
+
+                            Connected.objects.create(
+                                user=new_user, is_connected=False, code_room_conected="", channel_name_connected="")
+
+                            return redirect('login_view')
 
                         except:
                             error.append('No se pudo crear la cuenta')
-
-                        return redirect('login_view')
-
                 else:
-
                     return render(request, "register.html", {"form": form, "error": error, 'error_bd': respuesta, "datos_error": reason})
 
             else:
