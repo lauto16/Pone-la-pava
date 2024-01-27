@@ -2,22 +2,16 @@ from Mate.utils import getUser, updateConnection
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-
+import json
 
 @login_required
 def lobby(request):
 
-    user = getUser(request)
+    if request.method == 'POST':
 
-    updateConnection(
-        user=user, channel_name="", code_room="", state=False)
+        body_unicode = request.body.decode('utf-8')
+        room_name = json.loads(body_unicode)
 
-    if request.method == "POST":
-
-        response_data = {
-            'success': True
-        }
-
-        return JsonResponse(response_data)
+        return JsonResponse({'room_name': room_name})
 
     return render(request, 'index.html')

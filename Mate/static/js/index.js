@@ -1,5 +1,6 @@
 const modal_create_room = document.getElementById('modal-create-room')
 const modal_join_room = document.getElementById('modal-join-room')
+const chat_modal = document.getElementById('chat-modal')
 
 const button_create_room = document.getElementById('create-room-button')
 const button_cancel_create = document.getElementById('cancel-create-modal')
@@ -17,6 +18,8 @@ const form_create = document.getElementById('form-create-room')
 const form_join = document.getElementById('form-join-room')
 const form_send_message = document.getElementById('form-send-message')
 
+const room_code_strong = document.getElementById('room-code-strong')
+const room_name = document.getElementById('room-name')
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -67,7 +70,33 @@ function getCookie(name) {
 }
 
 
-function redirectRoom(data) {
+async function blurBackground(action) {
+    container = document.getElementById('container')
+  
+    if (action == "blur") {
+  
+      for (let i = 0; i < 100; i++) {
+        await sleep(0.05)
+        property_blur = 'filter: blur(' + parseInt(i / 10).toString() + 'px);'
+        container.setAttribute('style', property_blur);
+  
+      }
+    }
+  
+    else if (action == "unblur") {
+      container.setAttribute('style', 'filter: blur("0px")')
+    }
+}
+
+
+function openRoom(room_data){
+    modal_join_room.style.display = 'none'
+    chat_modal.style.display = 'block'
+    room_name.textContent = room_data['room_name']
+}
+
+
+function redirectRoom(room_name) {
 
     let requestOptions = {
 
@@ -76,7 +105,7 @@ function redirectRoom(data) {
             'Content-Type': 'application/json',
             "X-CSRFToken": getCookie('csrftoken'),
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(room_name)
     };
 
     fetch('./', requestOptions)
@@ -89,7 +118,7 @@ function redirectRoom(data) {
         })
 
         .then(data => {
-            console.log(data);
+            openRoom(room_data=data)
         })
 
         .catch(error => {
@@ -110,19 +139,21 @@ function joinRoom(message) {
     joinSocket = new WebSocket(`ws://localhost:8000/ws/chat/join/${message['room_code']}/0`);
 
     joinSocket.onopen = function (event) {
-        console.log('connection opened(join)');
-    }
-
-    joinSocket.onclose = function (event) {
-        console.log('WebSocket connection closed.');
+        joinSocket.send(JSON.stringify({ type: 'redirect_room', message: 'redirect_room' }));
     }
 
     joinSocket.onmessage = function (event) {
         const message = JSON.parse(event.data);
-        console.log(message)
-        const li = document.createElement('li');
-        li.textContent = message.message;
-        chatMessages.appendChild(li);
+
+        if (message['type'] == 'room_redirection'){
+            redirectRoom(message['room_name'])
+        }
+        
+        else if(message['type'] == 'chat'){
+            const li = document.createElement('li');
+            li.textContent = message.message;
+            chatMessages.appendChild(li);
+        }
     }
 
 
@@ -139,14 +170,29 @@ function joinRoom(message) {
 }
 
 
+function showRoomCode(room_code){   
+    
+    room_code_strong.textContent = room_code
+}
+
+
 let createSocket;
 
 
 function createRoom(message) {
+
     createSocket = new WebSocket(`ws://localhost:8000/ws/chat/create/${message['room_name']}/${message['people_amount']}`);
 
     createSocket.onopen = function (event) {
         console.log('connection opened(create)')
+    }
+
+    createSocket.onmessage = function(event){
+        const message = JSON.parse(event.data);
+        if (message['type'] == 'room_created'){
+            console.log('codigo: ', message['message']);
+            showRoomCode(message['message'])
+        }
     }
 
 }
@@ -160,12 +206,6 @@ form_join.addEventListener('submit', function (e) {
 
     let message = {
         room_code: room_code
-    }
-
-    try {
-        joinSocket.close()
-    } catch (error) {
-        //
     }
 
     joinRoom(message)
@@ -227,6 +267,8 @@ button_close_connection.addEventListener('click', function () {
     let message = ""
     try {
         joinSocket.send(JSON.stringify({ type: 'delete_socket', message: message }));
+        blurBackground(action='unblur')
+        chat_modal.style.display = 'none'
     } catch (error) {
     }
 })

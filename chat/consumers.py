@@ -4,11 +4,12 @@ from asgiref.sync import async_to_sync
 from django.contrib.auth.models import User
 from channels.exceptions import DenyConnection, StopConsumer
 from channels.generic.websocket import WebsocketConsumer
-from Mate.utils import createRoomRegister, roomExists, updateConnection, isConnected
+from Mate.utils import createRoomRegister, roomExists, updateConnection, isConnected, getRoomName, getRoom
 
 
 class ChatConsumer(WebsocketConsumer):
-
+    
+    # documentation 
     """
     connect: recibe 2 tipos de peticiones: 
         -create -> valida que todo el usuario cumpla los requerimientos
@@ -22,7 +23,8 @@ class ChatConsumer(WebsocketConsumer):
 
 
     disconnect: obtiene los datos de la room actual mediante isConnected y cierra la conexion,
-                luego resetea Connection y hace raise StopConsumer para detener la clase
+                luego resetea Connection y hace raise StopConsumer para detener la clase. En caso de
+                que no quede nadie en la sala, se cierra la sala
 
 
     receive: recibe los datos del frontend, tiene 2 peticiones:
@@ -31,7 +33,6 @@ class ChatConsumer(WebsocketConsumer):
                                 conectado y el mensaje no esta vacio
 
     get_user: obtiene el usuario que envio la peticion
-
     """
 
     def connect(self):
@@ -40,6 +41,7 @@ class ChatConsumer(WebsocketConsumer):
         self.user = self.get_user(self.scope)
         self.room_code = 0
 
+        # create a room 
         if self.action == 'create':
 
             received_room_name = self.scope['url_route']['kwargs']['room_name_code']
@@ -51,7 +53,7 @@ class ChatConsumer(WebsocketConsumer):
             if validator.output():
 
                 self.room_code = validator.socket_code
-                self.room_name = validator.room_name
+                self.room_name = validator.original_room_name
                 self.people_amount = validator.people_amount
 
                 async_to_sync(self.channel_layer.group_add)(
@@ -66,30 +68,60 @@ class ChatConsumer(WebsocketConsumer):
                     people_amount=self.people_amount
                 )
 
+                # creation failed
                 if not (response_oncreate):
                     raise DenyConnection
+
+                # successfull creation 
+                else:
+                    # return the code to the room creator 
+
+                    self.accept()
+
+                    async_to_sync(self.channel_layer.group_send)(
+                    self.room_code,
+                        {
+                            'type': 'room_code_message',
+                            'message': self.room_code
+                        }
+
+                    )
 
             else:
                 raise DenyConnection
 
+        # join a room by code
         if self.action == 'join':
 
             response_is_connected = isConnected(user=self.user)
 
+            print('is_connected: ', response_is_connected)
+
             if response_is_connected['state'] == False:
                 self.room_code = self.scope['url_route']['kwargs']['room_name_code']
+                room = getRoom(room_code=self.room_code)
+    
+                if room is not None:
+                    
+                    max_connections = room.people_amount
 
-                if roomExists(self.room_code):
+                    if roomExists(self.room_code):
 
-                    async_to_sync(self.channel_layer.group_add)(
-                        self.room_code,
-                        self.channel_name
-                    )
+                        async_to_sync(self.channel_layer.group_add)(
+                            self.room_code,
+                            self.channel_name
+                        )
 
-                    self.accept()
+                        #room capacity exceded
+                        if len(self.channel_layer.groups[self.room_code]) > max_connections:
+                            return
+                        
+                        self.accept()
 
-                    updateConnection(
-                        user=self.user, channel_name=self.channel_name, code_room=self.room_code, state=True)
+                        print(self.room_code + ': ', len(self.channel_layer.groups[self.room_code]), "/", max_connections) 
+
+                        updateConnection(
+                            user=self.user, channel_name=self.channel_name, code_room=self.room_code, state=True)
 
             else:
                 return
@@ -109,21 +141,44 @@ class ChatConsumer(WebsocketConsumer):
 
         raise StopConsumer
 
+    def create_disconnect(self, close_code):
+    
+        async_to_sync(self.channel_layer.group_discard)(
+            self.room_code,
+            self.channel_name
+        )
+
+        self.close()    
+
     def receive(self, text_data):
 
         text_data_json = json.loads(text_data)
+        message = text_data_json['message']
+        message_type = text_data_json['type']
+        connection = isConnected(user=self.user)
 
-        if text_data_json['type'] == 'delete_socket':
+        # disconnection from chat room
+        if message_type == 'delete_socket':
+            
+            # if there's no users in the room, close it
+            if len(self.channel_layer.groups[self.room_code]) == 1:
+                self.close()
+            
+
             self.disconnect(close_code=1000)
 
+        # send redirect message to the front-end
+        elif message_type == 'redirect_room':
+            self.send(text_data=json.dumps({
+                'type': 'room_redirection',
+                'room_name': getRoomName(self.room_code)
+            }))
+
+        # chat message 
         else:
             if isConnected(self.user)['state'] == True:
-                message = text_data_json['message']
-
                 if len(message) < 1:
                     return
-
-                connection = isConnected(user=self.user)
 
                 async_to_sync(self.channel_layer.group_send)(
                     connection['connected_room_code'],
@@ -141,6 +196,16 @@ class ChatConsumer(WebsocketConsumer):
             'type': 'chat',
             'message': message
         }))
+
+    def room_code_message(self, event):
+        message = event['message']
+
+        self.send(text_data=json.dumps({
+            'type': 'room_created',
+            'message': message
+        }))
+        # close connection after creating room
+        self.create_disconnect(close_code=1000)
 
     def get_user(self, scope):
 

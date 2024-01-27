@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 class verifiedSocket():
 
     def __init__(self, user, room_name, people_amount):
-
+        
+        self.original_room_name = room_name
         self.room_name = self.cleanRoomName(room_name)
         self.socket_code = self.codeGenerator(name=self.room_name)
         self.people_amount = self.setPeopleAmount(people_amount=people_amount)
@@ -44,6 +45,7 @@ class verifiedSocket():
 
         default_value = 8
         max_value = 15
+        min_value = 2
 
         if isinstance(people_amount, str):
             for char in people_amount:
@@ -55,8 +57,11 @@ class verifiedSocket():
         if isinstance(people_amount, int):
             if people_amount <= max_value:
                 return people_amount
+            
+            elif people_amount < 2:
+                return min_value
 
-            else:
+            else:   
                 return max_value
 
         else:
@@ -67,7 +72,11 @@ class verifiedSocket():
             number_room_instances = RoomIntances.objects.get(
                 user=user).room_instances
 
-            return number_room_instances
+            if number_room_instances < 5:
+                return True
+            
+            else:
+                return None
 
         except Exception as e:
             logger.exception("Error: %s", str(e))
@@ -155,3 +164,19 @@ def getUser(request):
         user = request.user
 
     return user
+
+
+def getRoomName(room_code):
+    try:
+        return Room.objects.get(code=room_code).name
+    except Exception as e:
+        logger.exception("Error: %s", str(e))
+        return ''
+
+
+def getRoom(room_code):
+    try:
+        return Room.objects.get(code=room_code)
+    except Exception as e:
+        logger.exception("Error: %s", str(e))
+        return None
