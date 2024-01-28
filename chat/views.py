@@ -1,11 +1,15 @@
-from Mate.utils import getUser, updateConnection
+from Mate.utils import getUser, getRooms
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 import json
 
+
 @login_required
 def lobby(request):
+
+    user = getUser(request)
+    rooms = getRooms(user)
 
     if request.method == 'POST':
 
@@ -14,4 +18,4 @@ def lobby(request):
 
         return JsonResponse({'room_name': room_name})
 
-    return render(request, 'index.html')
+    return render(request, 'index.html', {'rooms': rooms})

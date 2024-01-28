@@ -20,7 +20,7 @@ class verifiedSocket():
         room_name = str(room_name)
         for char in room_name:
             if char.isalnum():
-                return room_name.replace(" ", "")
+                return room_name.replace(' ', '')
 
         return None
 
@@ -79,7 +79,7 @@ class verifiedSocket():
                 return None
 
         except Exception as e:
-            logger.exception("Error: %s", str(e))
+            logger.exception('Error: %s', str(e))
             return None
 
     def verified(self):
@@ -105,7 +105,7 @@ def createRoomRegister(name, code, user, people_amount):
         return True
 
     except Exception as e:
-        logger.exception("Error: %s", str(e))
+        logger.exception('Error: %s', str(e))
         return False
 
 
@@ -115,7 +115,7 @@ def roomExists(room_code):
         return True
 
     except Exception as e:
-        logger.exception("Error: %s", str(e))
+        logger.exception('Error: %s', str(e))
         return False
 
 
@@ -131,7 +131,7 @@ def updateConnection(user, channel_name, code_room, state):
         return True
 
     except Exception as e:
-        logger.exception("Error: %s", str(e))
+        logger.exception('Error: %s', str(e))
         return False
 
 
@@ -151,7 +151,7 @@ def isConnected(user):
         }
 
     except Exception as e:
-        logger.exception("Error: %s", str(e))
+        logger.exception('Error: %s', str(e))
         return False
 
     return response
@@ -170,13 +170,24 @@ def getRoomName(room_code):
     try:
         return Room.objects.get(code=room_code).name
     except Exception as e:
-        logger.exception("Error: %s", str(e))
+        logger.exception('Error: %s', str(e))
         return ''
 
+
+def getRooms(user):
+
+    rooms = []
+    try:
+        rooms = list(Room.objects.filter(user=user))
+    except Exception as e:
+        logger.exception('Error %s', str(e))
+
+    return rooms
+        
 
 def getRoom(room_code):
     try:
         return Room.objects.get(code=room_code)
     except Exception as e:
-        logger.exception("Error: %s", str(e))
+        logger.exception('Error: %s', str(e))
         return None

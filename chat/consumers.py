@@ -1,15 +1,19 @@
 import json
-from Mate.utils import verifiedSocket
-from asgiref.sync import async_to_sync
-from django.contrib.auth.models import User
+from Mate.utils import (verifiedSocket,
+                        createRoomRegister,
+                        roomExists,
+                        updateConnection,
+                        isConnected,
+                        getRoomName,
+                        getRoom)
 from channels.exceptions import DenyConnection, StopConsumer
 from channels.generic.websocket import WebsocketConsumer
-from Mate.utils import createRoomRegister, roomExists, updateConnection, isConnected, getRoomName, getRoom
+from asgiref.sync import async_to_sync
 
 
 class ChatConsumer(WebsocketConsumer):
-    
-    # documentation 
+
+    # documentation
     """
     connect: recibe 2 tipos de peticiones: 
         -create -> valida que todo el usuario cumpla los requerimientos
@@ -41,7 +45,7 @@ class ChatConsumer(WebsocketConsumer):
         self.user = self.get_user(self.scope)
         self.room_code = 0
 
-        # create a room 
+        # create a room
         if self.action == 'create':
 
             received_room_name = self.scope['url_route']['kwargs']['room_name_code']
@@ -68,24 +72,23 @@ class ChatConsumer(WebsocketConsumer):
                     people_amount=self.people_amount
                 )
 
-                # creation failed
-                if not (response_oncreate):
-                    raise DenyConnection
-
-                # successfull creation 
-                else:
-                    # return the code to the room creator 
-
+                # successfull creation
+                if response_oncreate:
                     self.accept()
 
+                    # return the code to the room creator
                     async_to_sync(self.channel_layer.group_send)(
-                    self.room_code,
+                        self.room_code,
                         {
                             'type': 'room_code_message',
                             'message': self.room_code
                         }
 
                     )
+
+                # creation failed
+                else:
+                    raise DenyConnection
 
             else:
                 raise DenyConnection
@@ -97,12 +100,12 @@ class ChatConsumer(WebsocketConsumer):
 
             print('is_connected: ', response_is_connected)
 
-            if response_is_connected['state'] == False:
+            if response_is_connected['state'] is False:
                 self.room_code = self.scope['url_route']['kwargs']['room_name_code']
                 room = getRoom(room_code=self.room_code)
-    
+
                 if room is not None:
-                    
+
                     max_connections = room.people_amount
 
                     if roomExists(self.room_code):
@@ -112,21 +115,31 @@ class ChatConsumer(WebsocketConsumer):
                             self.channel_name
                         )
 
-                        #room capacity exceded
+                        # room capacity exceded
                         if len(self.channel_layer.groups[self.room_code]) > max_connections:
                             return
-                        
+
                         self.accept()
 
-                        print(self.room_code + ': ', len(self.channel_layer.groups[self.room_code]), "/", max_connections) 
+                        print(
+                            self.room_code + ': ',
+                            len(self.channel_layer.groups[self.room_code]),
+                            "/", max_connections
+                        )
 
                         updateConnection(
-                            user=self.user, channel_name=self.channel_name, code_room=self.room_code, state=True)
+                            user=self.user,
+                            channel_name=self.channel_name,
+                            code_room=self.room_code,
+                            state=True
+                        )
 
             else:
                 return
 
     def disconnect(self, close_code):
+
+        print('disconnecting from ', self.room_code)
 
         disconnect_data = isConnected(user=self.user)
 
@@ -142,13 +155,13 @@ class ChatConsumer(WebsocketConsumer):
         raise StopConsumer
 
     def create_disconnect(self, close_code):
-    
+
         async_to_sync(self.channel_layer.group_discard)(
             self.room_code,
             self.channel_name
         )
 
-        self.close()    
+        self.close()
 
     def receive(self, text_data):
 
@@ -159,11 +172,10 @@ class ChatConsumer(WebsocketConsumer):
 
         # disconnection from chat room
         if message_type == 'delete_socket':
-            
+
             # if there's no users in the room, close it
             if len(self.channel_layer.groups[self.room_code]) == 1:
                 self.close()
-            
 
             self.disconnect(close_code=1000)
 
@@ -174,9 +186,9 @@ class ChatConsumer(WebsocketConsumer):
                 'room_name': getRoomName(self.room_code)
             }))
 
-        # chat message 
+        # chat message
         else:
-            if isConnected(self.user)['state'] == True:
+            if isConnected(self.user)['state'] is True:
                 if len(message) < 1:
                     return
 

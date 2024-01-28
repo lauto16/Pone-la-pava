@@ -21,6 +21,20 @@ const form_send_message = document.getElementById('form-send-message')
 const room_code_strong = document.getElementById('room-code-strong')
 const room_name = document.getElementById('room-name')
 
+
+function textShortener(element_class, x){
+
+    const textElements = document.querySelectorAll(element_class)
+
+    textElements.forEach(element => {
+        var text = element.textContent || element.innerText;
+        if (text.length > 10){
+            element.textContent = text.substring(0, x) + "...";
+        }
+    });
+}
+
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }

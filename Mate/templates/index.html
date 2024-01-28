@@ -47,7 +47,7 @@
     <div class="modal-create-room" id="modal-create-room">
         <div class="close-modal">
             <button id="close-modal-create">
-                <strong>X</strong>
+                <strong class="generic-strong">X</strong>
             </button>
         </div>
         <form action="" id="form-create-room">
@@ -82,7 +82,7 @@
     <div class="modal-join-room" id="modal-join-room">
         <div class="close-modal">
             <button id="close-modal-join">
-                <strong>X</strong>
+                <strong class="generic-strong">X</strong>
             </button>
         </div>
         <form action="" id="form-join-room">
@@ -117,24 +117,34 @@
         </header>
         <main>
             <section class="description">
-                <h1 id="title-description">¿Que es Pone la pava?</h1>
-                <div id="content-description">
-                    <strong>
-                        ¡Bienvenido a Pon&eacute;
-                        la pava!</strong> divertite con tus amigos a través de
-                    nuestras salas virtuales. Compart&iacute;
-                    mates, organiz&aacute;
-                    encuentros con la banda, vot&aacute;
-                    en las encuestas, y descubr&iacute;
-                    nuestra lista de experiencia
-                    auténticas. En <strong>Pone la pava</strong>, el chisme y la
-                    chispa argentina nunca se
-                    apaga.
-                    ¡Conect&aacute;
-                    , vot&aacute;
-                    , compart&iacute;
-                    y disfrut&aacute;
-                    de la esencia argentina en un solo lugar!
+                <h1 id="title-description">¡Bienvenido a Pon&eacute;
+                    la pava!
+                </h1>
+            </section>
+            <section class="container-rooms">
+                <div class="rooms">
+                    {% for room in rooms %}
+                    <div class="room-select">
+                        <div class="room-data">
+                            <p class="p-room-name"><strong class="strong-room-name">{{ room.name }}</strong></p>
+                            <div class="room-code-container">
+                                <input readonly value="{{ room.code }}" type="password" class="room-code-displayer" id="room_code-{{ room.code }}">
+                                <button class="copy-room-code">
+                                    <img class="img-copy" src="{% static 'img/copy.png' %}" alt="Entrar">
+                                </button>
+                            </div>
+                        </div>
+                        <div class="join-created-room">
+                            <form action="" class="form-join-created-room">
+                                <!--enviar msg al websocket que elimine de la bd la room y lo cierre-->
+                                <button class="join-created-room-button" id="join_room-{{room.id}}">
+                                    <img class="img-join" src="{% static 'img/join.png' %}" alt="Entrar">
+                                </strong>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
             </section>
             <section class="container-buttons-room">
@@ -151,9 +161,6 @@
                     </div>
                 </div>
             </section>
-            <footer>
-
-            </footer>
         </main>
     </div>
 
@@ -162,7 +169,10 @@
 <script src="{% static 'js/jquery.js' %}"></script>
 <script src="{% static 'js/index.js' %}"></script>
 <script>
+
+    /* AL CREAR UNA SALA NUEVA Y AGREGARLA A LA LISTA MEDIANTE JS, RECORDAR DE APLICARLE TEXT SHORTENER */
     errorHandler()
+    textShortener(element_class='.strong-room-name', x=20)
 </script>
 
 </html>
