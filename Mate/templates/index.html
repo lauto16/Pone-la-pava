@@ -10,31 +10,40 @@
     <link rel="stylesheet" href="{% static 'css/index.css' %}">
     <title>Pone la pava</title>
 </head>
-
 <body>
 
+    <input type="hidden" name="" id="img-not-see-src" value="{% static 'img/not-see.png' %}">
+    <input type="hidden" name="" id="img-see-src" value="{% static 'img/see.png' %}">
+
     <div id="chat-modal" class="chat-modal">
-        <div class="room-name-container">
+        <div class="room-utils-container">
+            <div class="delete-room">
+                <button id="button-delete-room">
+                    <img class="img-delete-room" src="{% static 'img/delete.png' %}" alt="Eliminar sala">
+                </button>
+            </div>
             <div class="p-room-name-container">
                 <p id="room-name"></p>
             </div>
             <div class="disconnect-button-container">
                 <button id="button-close-connection">
-                    CLOSE CONNECTION
+                    <img class="img-disconnect" src="{% static 'img/disconnect.png' %}" alt="Salir">
                 </button>
             </div>
         </div>
         <div class="room-messages">
-            <ul id="chat-messages"></ul>
+            <div class="chat-messages-list" id="chat-messages-list"></div>
         </div>
         <div class="send-message">
             <form id="form-send-message">
-                <input type="text" id="message-input" placeholder="Type your message here">
-                <button type="submit">Enviar</button>
+                <input type="text" id="message-input" placeholder="Mensaje">
+                <button id="button-send" type="submit">
+                    <img class="img-send" src="{% static 'img/send.png' %}" alt="Entrar">
+
+                </button>
             </form>
         </div>
     </div>
-
     <div class="div-errors" id="div-errors">
         <div class="exclamation">
             <p id="p-exclamation">!</p>
@@ -65,11 +74,13 @@
                         <p>Cancelar</p>
                     </button>
                 </div>
-                <div class="join-room">
-                    <button id="create-room-modal" type="submit" class="button-room">
-                        Crear sala
-                    </button>
-                </div>
+                <form action="">
+                    <div class="join-room">
+                        <button id="create-room-modal" type="submit" class="button-room">
+                            Crear sala
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <div class="room-code-div">
@@ -115,31 +126,29 @@
                 </h1>
             </div>
         </header>
-        <main>
-            <section class="description">
+        <main id="main">
+            <section class="description" id="description">
                 <h1 id="title-description">¡Bienvenido a Pon&eacute;
                     la pava!
                 </h1>
             </section>
-            <section class="container-rooms">
-                <div class="rooms">
+            <section class="container-rooms" id="container-rooms">
+                <div class="rooms" id="rooms">
                     {% for room in rooms %}
                     <div class="room-select">
                         <div class="room-data">
                             <p class="p-room-name"><strong class="strong-room-name">{{ room.name }}</strong></p>
                             <div class="room-code-container">
                                 <input readonly value="{{ room.code }}" type="password" class="room-code-displayer" id="room_code-{{ room.code }}">
-                                <button class="copy-room-code">
-                                    <img class="img-copy" src="{% static 'img/copy.png' %}" alt="Entrar">
+                                <button class="see-room-code">
+                                    <img class="img-see" id="{{ room.code }}" src="{% static 'img/see.png' %}" alt="Ver contraseña">
                                 </button>
                             </div>
                         </div>
                         <div class="join-created-room">
-                            <form action="" class="form-join-created-room">
-                                <!--enviar msg al websocket que elimine de la bd la room y lo cierre-->
-                                <button class="join-created-room-button" id="join_room-{{room.id}}">
+                            <form action="" class="form-join-created-room" id="join-{{ room.code }}">
+                                <button class="join-created-room-button">
                                     <img class="img-join" src="{% static 'img/join.png' %}" alt="Entrar">
-                                </strong>
                                 </button>
                             </form>
                         </div>
@@ -147,7 +156,7 @@
                     {% endfor %}
                 </div>
             </section>
-            <section class="container-buttons-room">
+            <section class="container-buttons-room" id="container-buttons-room">
                 <div class="container-buttons">
                     <div class="create-room">
                         <button id="create-room-button" class="button-room">
@@ -167,12 +176,42 @@
 </body>
 
 <script src="{% static 'js/jquery.js' %}"></script>
+<script src="{% static 'js/events.js' %}"></script>
 <script src="{% static 'js/index.js' %}"></script>
 <script>
 
-    /* AL CREAR UNA SALA NUEVA Y AGREGARLA A LA LISTA MEDIANTE JS, RECORDAR DE APLICARLE TEXT SHORTENER */
-    errorHandler()
+    function addRoom(message) {
+        var html_room = `
+            <div class="room-select">
+                <div class="room-data">
+                    <p class="p-room-name"><strong class="strong-room-name">${message.room_name}</strong></p>
+                    <div class="room-code-container">
+                        <input readonly value="${message.room_code}" type="password" class="room-code-displayer" id="${message.room_code}">
+                        <button class="see-room-code">
+                            <img class="img-see" id="${message.room_code}" src="{% static 'img/see.png' %}" alt="Ver contraseña">
+                        </button>
+                    </div>
+                </div>
+                <div class="join-created-room">
+                    <form action="" class="form-join-created-room" id="join-${message.room_code}">
+                        <button class="join-created-room-button">
+                            <img class="img-join" src="{% static 'img/join.png' %}" alt="Entrar">
+                        </button>
+                    </form>
+                </div>
+            </div>`;
+        
+        rooms.innerHTML = html_room + rooms.innerHTML;
+        setSeeEvents()
+        setJoinFormsEvents()
+    }
+
+
+    /* AL CREAR UNA SALA NUEVA Y AGREGARLA A LA LISTA MEDIANTE JS, RECORDAR DE APLICARLE TEXT SHORTENER  y setSeeEvents()*/
     textShortener(element_class='.strong-room-name', x=20)
+    setSeeEvents()
+    errorHandler()
+    setJoinFormsEvents()
 </script>
 
 </html>

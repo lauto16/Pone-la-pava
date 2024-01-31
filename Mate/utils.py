@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class verifiedSocket():
 
     def __init__(self, user, room_name, people_amount):
-        
+
         self.original_room_name = room_name
         self.room_name = self.cleanRoomName(room_name)
         self.socket_code = self.codeGenerator(name=self.room_name)
@@ -57,11 +57,11 @@ class verifiedSocket():
         if isinstance(people_amount, int):
             if people_amount <= max_value:
                 return people_amount
-            
+
             elif people_amount < 2:
                 return min_value
 
-            else:   
+            else:
                 return max_value
 
         else:
@@ -74,7 +74,7 @@ class verifiedSocket():
 
             if number_room_instances < 5:
                 return True
-            
+
             else:
                 return None
 
@@ -183,7 +183,7 @@ def getRooms(user):
         logger.exception('Error %s', str(e))
 
     return rooms
-        
+
 
 def getRoom(room_code):
     try:
@@ -191,3 +191,40 @@ def getRoom(room_code):
     except Exception as e:
         logger.exception('Error: %s', str(e))
         return None
+
+
+def deleteRoom(user):
+    print('user: ', user)
+
+    try:
+        connection_data = Connected.objects.get(user=user)
+        users_connected = list(Connected.objects.filter(
+            code_room_conected=connection_data.code_room_conected))
+
+        Room.objects.get(
+            user=user, code=connection_data.code_room_conected).delete()
+
+        print(users_connected)
+        return connection_data, users_connected
+
+    except Exception as e:
+        logger.exception('Error: %s', str(e))
+        return False, None
+
+
+def updateRoomInstances(user):
+    try:
+        user_rooms = list(Room.objects.filter(user=user))
+        room_instances = RoomIntances.objects.get(user=user)
+        if room_instances.room_instances >= 0:
+            room_instances.room_instances = len(user_rooms)
+            room_instances.save()
+        else:
+            room_instances.room_instances = 0
+            room_instances.save()
+
+        return True
+
+    except Exception as e:
+        logger.exception('Error: %s', str(e))
+        return False

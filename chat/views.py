@@ -1,4 +1,4 @@
-from Mate.utils import getUser, getRooms
+from Mate.utils import getUser, getRooms, updateRoomInstances
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -9,6 +9,7 @@ import json
 def lobby(request):
 
     user = getUser(request)
+    updateRoomInstances(user)
     rooms = getRooms(user)
 
     if request.method == 'POST':
