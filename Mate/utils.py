@@ -1,4 +1,4 @@
-from chat.models import Room, RoomIntances, Connected
+from chat.models import Room, RoomIntances, Connected, Message
 from django.contrib.auth.models import User
 import logging
 
@@ -201,10 +201,11 @@ def deleteRoom(user):
         users_connected = list(Connected.objects.filter(
             code_room_conected=connection_data.code_room_conected))
 
-        Room.objects.get(
-            user=user, code=connection_data.code_room_conected).delete()
+        room = Room.objects.get(
+            user=user, code=connection_data.code_room_conected)
 
-        print(users_connected)
+        room.delete()
+
         return connection_data, users_connected
 
     except Exception as e:
@@ -224,6 +225,42 @@ def updateRoomInstances(user):
             room_instances.save()
 
         return True
+
+    except Exception as e:
+        logger.exception('Error: %s', str(e))
+        return False
+
+
+def addMessage(content, user, room_code):
+    try:
+        room = Room.objects.get(code=room_code)
+        Message.objects.create(user=user, content=content, room=room)
+        return True
+    except Exception as e:
+        logger.exception('Error: %s', str(e))
+        return False
+
+
+def getMessages(room_code, user):
+
+    user_messages = {}
+
+    try:
+        room = Room.objects.get(code=room_code)
+        messages = list(Message.objects.filter(room=room).order_by('date'))
+
+        for i in range(len(messages)):
+            message_key = 'message_' + str(i)
+
+            user_messages[message_key] = [
+
+                messages[i].user.username,
+                messages[i].content,
+                (messages[i].user == user)
+
+            ]
+
+        return user_messages
 
     except Exception as e:
         logger.exception('Error: %s', str(e))

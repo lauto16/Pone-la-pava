@@ -7,10 +7,12 @@ from Mate.utils import (verifiedSocket,
                         getRoomName,
                         getRoom,
                         deleteRoom,
-                        updateRoomInstances)
+                        updateRoomInstances,
+                        addMessage)
 from channels.exceptions import DenyConnection, StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
+import logging
 
 
 class ChatConsumer(WebsocketConsumer):
@@ -60,6 +62,15 @@ class ChatConsumer(WebsocketConsumer):
         self.action = self.scope['url_route']['kwargs']['action']
         self.user = self.get_user(self.scope)
         self.room_code = 0
+        logger = logging.getLogger(__name__)
+
+        # try to disconnect the user before connecting or creating a new room
+        try:
+            connection = isConnected(self.user)
+            if connection['state'] is True:
+                self.disconnect(close_code=1000)
+        except Exception as e:
+            logger.exception('Error: %s', str(e))
 
         # create a room
         if self.action == 'create':
@@ -216,7 +227,8 @@ class ChatConsumer(WebsocketConsumer):
         elif message_type == 'redirect_room':
             self.send(text_data=json.dumps({
                 'type': 'room_redirection',
-                'room_name': getRoomName(self.room_code)
+                'room_name': getRoomName(self.room_code),
+                'room_code': self.room_code
             }))
 
         # delete a room
@@ -237,14 +249,19 @@ class ChatConsumer(WebsocketConsumer):
                 if len(message) < 1:
                     return
 
-                async_to_sync(self.channel_layer.group_send)(
-                    connection['connected_room_code'],
-                    {
-                        'type': 'chat_message',
-                        'message': message,
-                        'username': self.user.username
-                    }
-                )
+                if roomExists(room_code=connection['connected_room_code']):
+
+                    async_to_sync(self.channel_layer.group_send)(
+                        connection['connected_room_code'],
+                        {
+                            'type': 'chat_message',
+                            'message': message,
+                            'username': self.user.username
+                        }
+                    )
+
+                    addMessage(content=message, user=self.user,
+                               room_code=self.room_code)
 
     def chat_message(self, event):
 

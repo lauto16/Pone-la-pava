@@ -3,24 +3,11 @@ const description = document.getElementById('description')
 const container_rooms = document.getElementById('container-rooms')
 const container_buttons_room = document.getElementById('container-buttons-room')
 
-const rooms = document.getElementById('rooms')
-const modal_join_room = document.getElementById('modal-join-room')
+const chat_messages_list = document.getElementById('chat-messages-list')
 const chat_modal = document.getElementById('chat-modal')
 
-const form_send_message = document.getElementById('form-send-message')
-
-const room_name = document.getElementById('room-name')
-
-const button_close_connection = document.getElementById('button-close-connection')
-const button_delete_room = document.getElementById('button-delete-room')
 
 function changeBackgroundState(action, elements_list){
-
-    elements_list = [
-        description,
-        container_rooms, 
-        container_buttons_room
-    ]
 
     if (action == 'erase'){
         for (let i = 0; i < elements_list.length; i++) {
@@ -62,6 +49,7 @@ function sleep(ms) {
 
 
 async function errorHandler(error) {
+
     const div_errors = document.getElementById("div-errors")
     const p_errors = document.getElementById("p-errors")
 
@@ -108,6 +96,7 @@ function getCookie(name) {
 function openRoom(room_data){
     modal_join_room.style.display = 'none'
     chat_modal.style.display = 'block'
+    const room_name = document.getElementById('room-name')
 
     changeBackgroundState(
         action='erase',
@@ -117,12 +106,29 @@ function openRoom(room_data){
             container_buttons_room
     ])
 
+    chat_messages_list.innerHTML = ""
+
+    room_messages = room_data['room_messages']
     
-    room_name.textContent = room_data['room_name']
+    Object.keys(room_messages).forEach(key => {
+
+        message_dict = {
+            username: room_messages[key][0],
+            message: room_messages[key][1],
+            isUser: room_messages[key][2],            
+        }
+
+        addMessage(message_dict)
+      });
+    
+    room_name.textContent = room_data.room_name
+
+    // set the event listener so when the room is delete, the room div gets removed
+    setEventDelete(room_data.room_code)
 }
 
 
-function redirectRoom(room_name) {
+function redirectRoom(room_data) {
 
     let requestOptions = {
 
@@ -131,7 +137,11 @@ function redirectRoom(room_name) {
             'Content-Type': 'application/json',
             "X-CSRFToken": getCookie('csrftoken'),
         },
-        body: JSON.stringify(room_name)
+        // send 
+        body: JSON.stringify({
+            room_name: room_data.room_name,
+            room_code: room_data.room_code
+        })
     };
 
     fetch('./', requestOptions)
@@ -155,11 +165,7 @@ function redirectRoom(room_name) {
 
 
 let joinSocket;
-
-
 function addMessage(message) {
-
-    const chatMessages = document.getElementById('chat-messages-list');
 
     const messageDiv = document.createElement('div');
     messageDiv.className = 'chat-message';
@@ -182,13 +188,16 @@ function addMessage(message) {
     messageDiv.appendChild(strongElement);
     messageDiv.appendChild(pElement);
 
-    chatMessages.appendChild(messageDiv);
+    chat_messages_list.appendChild(messageDiv);
+
+    chat_messages_list.scrollTo({
+        top: chat_messages_list.scrollHeight,
+        behavior: 'smooth'
+      });
 }
 
 
 function joinRoom(message) {
-
-    const messageInput = document.getElementById('message-input');
 
     joinSocket = new WebSocket(`ws://localhost:8000/ws/chat/join/${message.room_code}/0`);
 
@@ -196,23 +205,11 @@ function joinRoom(message) {
         joinSocket.send(JSON.stringify({ type: 'redirect_room', message: 'redirect_room' }));
     }
 
-    joinSocket.onclose = function(event){
-        changeBackgroundState(
-            action='unerase',
-            elements_list=[
-                description,
-                container_rooms,
-                container_buttons_room
-        ])
-        
-        chat_modal.style.display = 'none'
-    }
-
     joinSocket.onmessage = function (event) {
         const message = JSON.parse(event.data);
 
         if (message.type == 'room_redirection'){
-            redirectRoom(message.room_name)
+            redirectRoom(message)
         }
         
         else if(message.type == 'chat'){
@@ -220,8 +217,24 @@ function joinRoom(message) {
         }
     }
 
+    joinSocket.onclose = function(event){
 
+        changeBackgroundState(
+            action='unerase',
+            elements_list=[
+                description,
+                container_rooms,
+                container_buttons_room
+        ])
+
+        chat_modal.style.display = 'none'
+    
+    }
+
+    const form_send_message = document.getElementById('form-send-message')
     form_send_message.addEventListener('submit', function (event) {
+
+        const messageInput = document.getElementById('message-input');
 
         event.preventDefault();
         const message = messageInput.value;
@@ -233,8 +246,6 @@ function joinRoom(message) {
 
 
 let createSocket;
-
-
 function createRoom(message) {
 
     createSocket = new WebSocket(`ws://localhost:8000/ws/chat/create/${message.room_name}/${message.people_amount}`);
@@ -250,9 +261,11 @@ function createRoom(message) {
 }
 
 
-//this event listener needs to be here so it can use the defined websocket 
+//the following event listeners needs to be here so it can use the defined websocket 
+const button_close_connection = document.getElementById('button-close-connection')
 button_close_connection.addEventListener('click', function(){
     try {
+        message = ""
         joinSocket.send(JSON.stringify({ type: 'delete_socket', message: message }));
         
         changeBackgroundState(
@@ -262,19 +275,19 @@ button_close_connection.addEventListener('click', function(){
                 container_rooms,
                 container_buttons_room
         ])
-        
-        chat_modal.style.display = 'none'
-
-        //AGREGAR PARA ELIMINAR LOS MENSAJES VIEJOS
 
     } catch (error) {
         console.log(error)
     }
 })
-button_delete_room.addEventListener('click', function(){
-    message = ""
 
-    joinSocket.send(JSON.stringify({ type: 'delete', message: message }));
-        
-})
 
+function setEventDelete(room_code){
+    const button_delete_room = document.getElementById('button-delete-room')
+    button_delete_room.addEventListener('click', function(e){
+        message = ""
+        joinSocket.send(JSON.stringify({ type: 'delete', message: message }));
+        room_id = 'room_select_' + room_code
+        document.getElementById(room_id).remove()
+    })
+}

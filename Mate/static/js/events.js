@@ -1,19 +1,6 @@
-const button_create_room = document.getElementById('create-room-button')
-const button_cancel_create = document.getElementById('cancel-create-modal')
-const button_cancel_join = document.getElementById('cancel-join-modal')
-const button_close_create = document.getElementById('close-modal-create')
-const button_close_join = document.getElementById('close-modal-join')
-const create_room_button_modal = document.getElementById('create-room-modal')
-const join_room_button = document.getElementById('join-room-button')
-
 const modal_create_room = document.getElementById('modal-create-room')
-
-const range_form = document.getElementById('input-people-amount');
-const label_range_form = document.getElementById('label-range-form');
+const modal_join_room = document.getElementById('modal-join-room')
 const room_code_strong = document.getElementById('room-code-strong')
-
-const form_create = document.getElementById('form-create-room')
-const form_join = document.getElementById('form-join-room')
 
 
 function setSeeEvents(){
@@ -55,13 +42,13 @@ function setJoinFormsEvents(){
             message = {
                 room_code:room_code
             }
-            
             joinRoom(message)
         });
     });
 }
 
 
+const form_join = document.getElementById('form-join-room')
 form_join.addEventListener('submit', function (e) {
 
     e.preventDefault()
@@ -77,6 +64,7 @@ form_join.addEventListener('submit', function (e) {
 })
 
 
+const form_create = document.getElementById('form-create-room')
 form_create.addEventListener('submit', function (e) {
 
     e.preventDefault();
@@ -95,27 +83,32 @@ form_create.addEventListener('submit', function (e) {
 })
 
 
+const button_close_create = document.getElementById('close-modal-create')
 button_close_create.addEventListener('click', function (e) {
     modal_create_room.style.display = 'none'
     room_code_strong.textContent = ""
 })
 
 
+const button_close_join = document.getElementById('close-modal-join')
 button_close_join.addEventListener('click', function (e) {
     modal_join_room.style.display = 'none'
 })
 
 
+const join_room_button = document.getElementById('join-room-button')
 join_room_button.addEventListener('click', function (e) {
     modal_join_room.style.display = 'block'
 })
 
 
+const button_create_room = document.getElementById('create-room-button')
 button_create_room.addEventListener('click', function () {
     modal_create_room.style.display = 'block'
 })
 
 
+const button_cancel_create = document.getElementById('cancel-create-modal')
 button_cancel_create.addEventListener('click', function (e) {
     e.preventDefault()
     modal_create_room.style.display = 'none'
@@ -123,16 +116,19 @@ button_cancel_create.addEventListener('click', function (e) {
 })
 
 
+const button_cancel_join = document.getElementById('cancel-join-modal')
 button_cancel_join.addEventListener('click', function (e) {
     e.preventDefault()
     modal_join_room.style.display = 'none'
 })
 
 
+const range_form = document.getElementById('input-people-amount');
 range_form.addEventListener('input', function () {
     label_range_form.textContent = `Integrantes: ${range_form.value}`;
 });
 
 
+const label_range_form = document.getElementById('label-range-form');
 label_range_form.textContent = `Integrantes: ${range_form.value}`;
 

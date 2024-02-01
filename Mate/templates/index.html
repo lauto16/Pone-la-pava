@@ -135,7 +135,7 @@
             <section class="container-rooms" id="container-rooms">
                 <div class="rooms" id="rooms">
                     {% for room in rooms %}
-                    <div class="room-select">
+                    <div class="room-select" id="room_select_{{ room.code }}">
                         <div class="room-data">
                             <p class="p-room-name"><strong class="strong-room-name">{{ room.name }}</strong></p>
                             <div class="room-code-container">
@@ -181,12 +181,13 @@
 <script>
 
     function addRoom(message) {
+        const rooms = document.getElementById('rooms')
         var html_room = `
-            <div class="room-select">
+            <div class="room-select" id="room_select_${message.room_code}">
                 <div class="room-data">
                     <p class="p-room-name"><strong class="strong-room-name">${message.room_name}</strong></p>
                     <div class="room-code-container">
-                        <input readonly value="${message.room_code}" type="password" class="room-code-displayer" id="${message.room_code}">
+                        <input readonly value="${message.room_code}" type="password" class="room-code-displayer" id="room_code-${message.room_code}">
                         <button class="see-room-code">
                             <img class="img-see" id="${message.room_code}" src="{% static 'img/see.png' %}" alt="Ver contraseña">
                         </button>

@@ -1,4 +1,4 @@
-from Mate.utils import getUser, getRooms, updateRoomInstances
+from Mate.utils import getUser, getRooms, updateRoomInstances, getMessages
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -14,9 +14,19 @@ def lobby(request):
 
     if request.method == 'POST':
 
-        body_unicode = request.body.decode('utf-8')
-        room_name = json.loads(body_unicode)
+        data = json.loads(request.body)
 
-        return JsonResponse({'room_name': room_name})
+        room_code = data.get('room_code')
+        room_name = data.get('room_name')
+
+        messages = getMessages(room_code=room_code, user=user)
+
+        response_data = {
+            'room_code': room_code,
+            'room_name': room_name,
+            'room_messages': messages
+        }
+
+        return JsonResponse(response_data)
 
     return render(request, 'index.html', {'rooms': rooms})
