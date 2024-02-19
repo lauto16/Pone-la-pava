@@ -114,16 +114,6 @@ def createRoomRegister(name, code, user, people_amount):
         return False
 
 
-def roomExists(room_code):
-    try:
-        Room.objects.get(code=room_code)
-        return True
-
-    except Exception as e:
-        logger.exception('Error: %s', str(e))
-        return False
-
-
 def updateConnection(user, channel_name, code_room, state):
     try:
         user_is_connected = Connected.objects.get(user=user)

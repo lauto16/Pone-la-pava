@@ -1,7 +1,6 @@
 import json
 from Mate.utils import (verifiedSocket,
                         createRoomRegister,
-                        roomExists,
                         updateConnection,
                         isConnected,
                         getRoomName,
@@ -79,100 +78,89 @@ class ChatConsumer(WebsocketConsumer):
 
             received_room_name = self.scope['url_route']['kwargs']['room_name_code']
             received_people_amount = self.scope['url_route']['kwargs']['people_amount']
-            
+
             validator = verifiedSocket(
                 user=self.user, people_amount=received_people_amount, room_name=received_room_name)
 
-            if validator.output():
-
-                self.room_code = validator.socket_code
-                self.room_name = validator.original_room_name
-                self.people_amount = validator.people_amount
-
-                async_to_sync(self.channel_layer.group_add)(
-                    self.room_code,
-                    self.channel_name
-                )
-
-                response_oncreate = createRoomRegister(
-                    name=self.room_name,
-                    code=self.room_code,
-                    user=self.user,
-                    people_amount=self.people_amount
-                )
-
-                # successfull creation
-                if response_oncreate:
-                    self.accept()
-
-                    # return the code to the room creator
-                    async_to_sync(self.channel_layer.group_send)(
-                        self.room_code,
-                        {
-                            'type': 'room_code_message',
-
-                        }
-
-                    )
-
-                # creation failed
-                else:
-                    raise DenyConnection
-
-            else:
+            # validation failed
+            if validator.output() is False:
                 raise DenyConnection
+
+            self.room_code = validator.socket_code
+            self.room_name = validator.original_room_name
+            self.people_amount = validator.people_amount
+
+            async_to_sync(self.channel_layer.group_add)(
+                self.room_code,
+                self.channel_name
+            )
+
+            response_oncreate = createRoomRegister(
+                name=self.room_name,
+                code=self.room_code,
+                user=self.user,
+                people_amount=self.people_amount
+            )
+
+            # creation failed
+            if response_oncreate is False:
+                raise DenyConnection
+
+            self.accept()
+
+            # return the code to the room creator
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_code,
+                {
+                    'type': 'room_code_message',
+
+                }
+
+            )
 
         # join a room by code
         elif self.action == 'join':
 
             response_is_connected = isConnected(user=self.user)
 
-            print('is_connected: ', response_is_connected)
-
-            if response_is_connected['state'] is False:
-                self.room_code = self.scope['url_route']['kwargs']['room_name_code']
-                room = getRoom(room_code=self.room_code)
-
-                if room is not None:
-
-                    max_connections = room.people_amount
-
-                    if roomExists(self.room_code):
-
-                        async_to_sync(self.channel_layer.group_add)(
-                            self.room_code,
-                            self.channel_name
-                        )
-
-                        # room capacity exceded
-                        if len(self.channel_layer.groups[self.room_code]) > max_connections:
-                            return
-
-                        print('ROOMS: ',
-                              self.channel_layer.groups[self.room_code]
-                              )
-
-                        self.accept()
-
-                        print(
-                            self.room_code + ': ',
-                            len(self.channel_layer.groups[self.room_code]),
-                            "/", max_connections
-                        )
-
-                        updateConnection(
-                            user=self.user,
-                            channel_name=self.channel_name,
-                            code_room=self.room_code,
-                            state=True
-                        )
-
-            else:
+            if response_is_connected['state'] is True:
                 return
+            self.room_code = self.scope['url_route']['kwargs']['room_name_code']
+            room = getRoom(room_code=self.room_code)
+
+            # room doesn't exists
+            if room is None:
+                return
+
+            max_connections = room.people_amount
+
+            async_to_sync(self.channel_layer.group_add)(
+                self.room_code,
+                self.channel_name
+            )
+
+            # room capacity exceded
+            if len(self.channel_layer.groups[self.room_code]) > max_connections:
+                return
+
+            self.accept()
+
+            print(
+                self.room_code + ': ',
+                len(self.channel_layer.groups[self.room_code]),
+                "/", max_connections
+            )
+
+            updateConnection(
+                user=self.user,
+                channel_name=self.channel_name,
+                code_room=self.room_code,
+                state=True
+            )
 
     def disconnect(self, close_code):
 
-        print('disconnecting from ', self.room_code)
+        print('disconnecting user from ', self.room_code)
 
         disconnect_data = isConnected(user=self.user)
 
@@ -237,6 +225,7 @@ class ChatConsumer(WebsocketConsumer):
         elif message_type == 'delete':
 
             connection_data = isConnected(user=self.user)
+
             if connection_data['state'] is False:
                 print("Room does not exists")
                 return
@@ -244,13 +233,12 @@ class ChatConsumer(WebsocketConsumer):
             room_user_id = getRoom(
                 room_code=connection_data['connected_room_code']).user.id
 
-            print(self.user.id, room_user_id)
-
             if self.user.id != room_user_id:
                 print("User tried to delete a room that he does not own")
                 return
 
             connection_data, users_connected = deleteRoom(user=self.user)
+
             for user_con in users_connected:
                 self.delete_disconnect(
                     close_code=1000, data=user_con)
@@ -260,27 +248,29 @@ class ChatConsumer(WebsocketConsumer):
 
         # chat message
         else:
-            if isConnected(self.user)['state'] is True:
+            if isConnected(self.user)['state'] is False:
+                return
 
-                if len(message) < 1:
-                    return
+            if getRoom(room_code=connection['connected_room_code']) is None:
+                return
 
-                # escaping characters
-                message = html_escape(py_escape(message))
+            if len(message) < 1:
+                return
 
-                if roomExists(room_code=connection['connected_room_code']):
+            # escaping characters
+            message = html_escape(py_escape(message))
 
-                    async_to_sync(self.channel_layer.group_send)(
-                        connection['connected_room_code'],
-                        {
-                            'type': 'chat_message',
-                            'message': message,
-                            'username': self.user.username
-                        }
-                    )
+            async_to_sync(self.channel_layer.group_send)(
+                connection['connected_room_code'],
+                {
+                    'type': 'chat_message',
+                    'message': message,
+                    'username': self.user.username
+                }
+            )
 
-                    addMessage(content=message, user=self.user,
-                               room_code=self.room_code)
+            addMessage(content=message, user=self.user,
+                       room_code=self.room_code)
 
     def chat_message(self, event):
 
