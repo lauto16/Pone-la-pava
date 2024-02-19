@@ -16,12 +16,19 @@ def lobby(request):
 
         data = json.loads(request.body)
 
+        isOwner = False
         room_code = data.get('room_code')
         room_name = data.get('room_name')
 
         messages = getMessages(room_code=room_code, user=user)
 
+        for room in rooms:
+            if room_code == room.code:
+                isOwner = True
+                break
+
         response_data = {
+            'isOwner': isOwner,
             'room_code': room_code,
             'room_name': room_name,
             'room_messages': messages

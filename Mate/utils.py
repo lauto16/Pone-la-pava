@@ -1,5 +1,7 @@
 from chat.models import Room, RoomIntances, Connected, Message
 from django.contrib.auth.models import User
+from html import escape as html_escape
+from glob import escape as py_escape
 import logging
 
 
@@ -18,6 +20,9 @@ class verifiedSocket():
 
     def cleanRoomName(self, room_name):
         room_name = str(room_name)
+        room_name = html_escape(py_escape(room_name))
+        if len(room_name) > 30:
+            return None
         for char in room_name:
             if char.isalnum():
                 return room_name.replace(' ', '')
@@ -194,8 +199,6 @@ def getRoom(room_code):
 
 
 def deleteRoom(user):
-    print('user: ', user)
-
     try:
         connection_data = Connected.objects.get(user=user)
         users_connected = list(Connected.objects.filter(

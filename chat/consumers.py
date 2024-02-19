@@ -12,6 +12,8 @@ from Mate.utils import (verifiedSocket,
 from channels.exceptions import DenyConnection, StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
+from glob import escape as py_escape
+from html import escape as html_escape
 import logging
 
 
@@ -77,7 +79,7 @@ class ChatConsumer(WebsocketConsumer):
 
             received_room_name = self.scope['url_route']['kwargs']['room_name_code']
             received_people_amount = self.scope['url_route']['kwargs']['people_amount']
-
+            
             validator = verifiedSocket(
                 user=self.user, people_amount=received_people_amount, room_name=received_room_name)
 
@@ -233,21 +235,38 @@ class ChatConsumer(WebsocketConsumer):
 
         # delete a room
         elif message_type == 'delete':
+
+            connection_data = isConnected(user=self.user)
+            if connection_data['state'] is False:
+                print("Room does not exists")
+                return
+
+            room_user_id = getRoom(
+                room_code=connection_data['connected_room_code']).user.id
+
+            print(self.user.id, room_user_id)
+
+            if self.user.id != room_user_id:
+                print("User tried to delete a room that he does not own")
+                return
+
             connection_data, users_connected = deleteRoom(user=self.user)
-            if connection_data:
+            for user_con in users_connected:
+                self.delete_disconnect(
+                    close_code=1000, data=user_con)
 
-                for user_con in users_connected:
-                    self.delete_disconnect(
-                        close_code=1000, data=user_con)
-
-                updateRoomInstances(user=self.user)
-                self.close()
+            updateRoomInstances(user=self.user)
+            self.close()
 
         # chat message
         else:
             if isConnected(self.user)['state'] is True:
+
                 if len(message) < 1:
                     return
+
+                # escaping characters
+                message = html_escape(py_escape(message))
 
                 if roomExists(room_code=connection['connected_room_code']):
 

@@ -1,6 +1,6 @@
 import bcrypt
 from django.contrib.auth.models import User
-
+from chat.models import RoomIntances, Connected
 
 # SIGN IN Y LOGIN -----------------------------------------------
 
@@ -52,7 +52,6 @@ def verifyPassword(password, username):
         return 'USER_DOES_NOT_EXISTS', None
 
     try:
-
         hashed_password = usuario.password.encode('utf-8')
         if (bcrypt.checkpw(password.encode('utf-8'), hashed_password)):
             return True, usuario
@@ -63,10 +62,13 @@ def verifyPassword(password, username):
 
 
 def passwordHashing(password):
-    hashed_password_bytes = bcrypt.hashpw(
-        password.encode('utf-8'), bcrypt.gensalt())
-    hashed_password_str = hashed_password_bytes.decode('utf-8')
-    return hashed_password_str
+    try:
+        hashed_password_bytes = bcrypt.hashpw(
+            password.encode('utf-8'), bcrypt.gensalt())
+        hashed_password_str = hashed_password_bytes.decode('utf-8')
+        return hashed_password_str
+    except:
+        return False
 
 
 def comprobarUser(usuario, email):
@@ -89,3 +91,20 @@ def comprobarUser(usuario, email):
             return True, None
 
     return False, "Este email ya esta registrado en una cuenta"
+
+
+def createUserData(user, email, password):
+    try:
+        new_user = User.objects.create(
+            username=user, email=email, password=password)
+
+        RoomIntances.objects.create(
+            user=new_user, room_instances=0)
+
+        Connected.objects.create(
+            user=new_user, is_connected=False, code_room_conected="", channel_name_connected="")
+
+        return True, None
+
+    except:
+        return False, "Error al crear el usuario"

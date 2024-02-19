@@ -97,6 +97,15 @@ function openRoom(room_data){
     modal_join_room.style.display = 'none'
     chat_modal.style.display = 'block'
     const room_name = document.getElementById('room-name')
+    const button_delete_room = document.getElementById('button-delete-room')
+    
+
+    if(room_data.isOwner === false){
+        button_delete_room.style.display = "none"
+    }
+    else{
+        button_delete_room.style.display = "block"
+    }
 
     changeBackgroundState(
         action='erase',

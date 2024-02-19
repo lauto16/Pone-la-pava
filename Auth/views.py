@@ -1,9 +1,7 @@
 from .auth_utils import *
 from django.contrib.auth import login
 from Mate.forms import Login, Register
-from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
-from chat.models import RoomIntances, Connected
 
 
 def register_view(request):
@@ -18,45 +16,39 @@ def register_view(request):
 
         if form.is_valid():
 
-            usuario = form.cleaned_data['username']
+            user = form.cleaned_data['username']
             email = form.cleaned_data['email']
             password = form.cleaned_data['password']
             password_repeat = form.cleaned_data['password_repeat']
 
-            if password == password_repeat:
-                valida, error = validatePassword(password)
-
-                if valida and not error:
-
-                    respuesta, reason = comprobarUser(usuario, email)
-
-                    error = []
-
-                    if respuesta:
-
-                        try:
-                            password = passwordHashing(password)
-                            new_user = User.objects.create(
-                                username=usuario, email=email, password=password)
-
-                            RoomIntances.objects.create(
-                                user=new_user, room_instances=0)
-
-                            Connected.objects.create(
-                                user=new_user, is_connected=False, code_room_conected="", channel_name_connected="")
-
-                            return redirect('login_view')
-
-                        except:
-                            error.append('No se pudo crear la cuenta')
-                else:
-                    return render(request, "register.html", {"form": form, "error": error, 'error_bd': respuesta, "datos_error": reason})
-
-            else:
+            if password != password_repeat:
                 error.append("Las contraseñas no son iguales")
+                return render(request, "register.html", {"form": form, "error": error, 'error_bd': respuesta, "datos_error": reason})
 
-        else:
-            error.append("El email no es valido")
+            valida, error = validatePassword(password)
+
+            if valida is False:
+                return render(request, "register.html", {"form": form, "error": error, 'error_bd': respuesta, "datos_error": reason})
+
+            respuesta, reason = comprobarUser(user, email)
+
+            if respuesta is False:
+                return render(request, "register.html", {"form": form, "error": error, 'error_bd': respuesta, "datos_error": reason})
+
+            password = passwordHashing(password)
+
+            if password is False:
+                error = []
+                error.append("No se pudo crear la cuenta")
+                return render(request, "register.html", {"form": form, "error": error, 'error_bd': respuesta, "datos_error": reason})
+
+            response_create_user_data, reason = createUserData(
+                user=user, email=email, password=password)
+
+            if response_create_user_data is False:
+                return render(request, "register.html", {"form": form, "error": error, 'error_bd': respuesta, "datos_error": reason})
+
+            return redirect('login_view')
 
     else:
         form = Register()
@@ -82,11 +74,10 @@ def login_view(request):
 
             if resultado == 'USER_DOES_NOT_EXISTS' or resultado == False:
                 error = "El usuario o la contraseña no son correctos"
+                return render(request, "login.html", {"form": form, "error": error})
 
-            elif resultado == True:
-
-                login(request, user)
-                return redirect('lobby')
+            login(request, user)
+            return redirect('lobby')
 
     else:
         form = Login()

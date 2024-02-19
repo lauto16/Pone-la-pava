@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 
 class Room(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=30)
     code = models.CharField(max_length=100)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     people_amount = models.IntegerField()
