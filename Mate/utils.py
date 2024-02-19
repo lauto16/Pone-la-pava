@@ -21,8 +21,10 @@ class verifiedSocket():
     def cleanRoomName(self, room_name):
         room_name = str(room_name)
         room_name = html_escape(py_escape(room_name))
+
         if len(room_name) > 30:
             return None
+
         for char in room_name:
             if char.isalnum():
                 return room_name.replace(' ', '')
@@ -59,18 +61,14 @@ class verifiedSocket():
 
             people_amount = int(people_amount)
 
-        if isinstance(people_amount, int):
-            if people_amount <= max_value:
-                return people_amount
+        if min_value <= people_amount <= max_value:
+            return people_amount
 
-            elif people_amount < 2:
-                return min_value
-
-            else:
-                return max_value
+        elif people_amount < 2:
+            return min_value
 
         else:
-            return default_value
+            return max_value
 
     def verifyRoomInstances(self, user):
         try:
@@ -210,6 +208,7 @@ def updateRoomInstances(user):
     try:
         user_rooms = list(Room.objects.filter(user=user))
         room_instances = RoomIntances.objects.get(user=user)
+
         if room_instances.room_instances >= 0:
             room_instances.room_instances = len(user_rooms)
             room_instances.save()
