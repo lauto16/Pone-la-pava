@@ -62,6 +62,7 @@ class ChatConsumer(WebsocketConsumer):
 
         self.action = self.scope['url_route']['kwargs']['action']
         self.user = self.get_user(self.scope)
+        print("USUARIO: ", self.user)
         self.room_code = 0
         logger = logging.getLogger(__name__)
 
@@ -163,6 +164,9 @@ class ChatConsumer(WebsocketConsumer):
         print('disconnecting user from ', self.room_code)
 
         disconnect_data = isConnected(user=self.user)
+
+        if disconnect_data['state'] is False:
+            return
 
         if disconnect_data['connected_room_code'] in self.channel_layer.groups:
             async_to_sync(self.channel_layer.group_discard)(

@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 import json
+from django.contrib.auth import logout
 
 
 @login_required

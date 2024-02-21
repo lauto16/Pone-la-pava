@@ -81,19 +81,29 @@ body {
 
 .description {
     margin-top: 80px;
-    text-align: center;
     font-family: 'Kanit', sans-serif;
     color: #d8c8fd;
-    width: 80%;
-    margin-left: 10%;
-    margin-right: 10%;
-    
+    width: 90%;
+    margin-left: 5%;
+    margin-right: 5%;
+    display: inline-flex;
+}
+
+#logout-button{
+    width: 4%;
+    background-color: transparent;
+    border: 0px;
+    outline: none;
+    transition: ease opacity 0.2s;
+}
+
+#logout-button:hover{
+    opacity: 0.5;
+    cursor: pointer;
 }
 
 #title-description {
-    width: 98%;
-    margin-left: 1%;
-    margin-right: 1%;
+    width: 96%;
 }
 
 /* BUTTONS */

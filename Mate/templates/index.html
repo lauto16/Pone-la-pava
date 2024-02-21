@@ -36,6 +36,7 @@
         </div>
         <div class="send-message">
             <form id="form-send-message">
+                {% csrf_token %} 
                 <input type="text" id="message-input" placeholder="Mensaje">
                 <button id="button-send" type="submit">
                     <img class="img-send" src="{% static 'img/send.png' %}" alt="Entrar">
@@ -60,6 +61,7 @@
             </button>
         </div>
         <form action="" id="form-create-room">
+            {% csrf_token %} 
             <div class="container-inputs-modal">
                 <input type="text" placeholder="Nombre de la sala" name="room_name" id="input-room-name"
                     class="input-form">
@@ -75,6 +77,7 @@
                     </button>
                 </div>
                 <form action="">
+                    {% csrf_token %} 
                     <div class="join-room">
                         <button id="create-room-modal" type="submit" class="button-room">
                             Crear sala
@@ -97,6 +100,7 @@
             </button>
         </div>
         <form action="" id="form-join-room">
+            {% csrf_token %}
             <div class="container-inputs-modal">
                 <input type="text" placeholder="Codigo de la sala" name="room_code_join" id="input-room-code"
                     class="input-form">
@@ -131,6 +135,12 @@
                 <h1 id="title-description">¡Bienvenido a Pon&eacute;
                     la pava!
                 </h1>
+                <form id="form-logout" action="" method="post">
+                    {% csrf_token %}
+                    <button id="logout-button">
+                        <img class="img-disconnect" src="{% static 'img/disconnect.png' %}" alt="Cerrar sesion">
+                    </button>
+                </form>
             </section>
             <section class="container-rooms" id="container-rooms">
                 <div class="rooms" id="rooms">
@@ -147,6 +157,7 @@
                         </div>
                         <div class="join-created-room">
                             <form action="" class="form-join-created-room" id="join-{{ room.code }}">
+                                {% csrf_token %}
                                 <button class="join-created-room-button">
                                     <img class="img-join" src="{% static 'img/join.png' %}" alt="Entrar">
                                 </button>
@@ -195,6 +206,7 @@
                 </div>
                 <div class="join-created-room">
                     <form action="" class="form-join-created-room" id="join-${message.room_code}">
+                        {% csrf_token %}
                         <button class="join-created-room-button">
                             <img class="img-join" src="{% static 'img/join.png' %}" alt="Entrar">
                         </button>

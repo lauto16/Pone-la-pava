@@ -145,7 +145,6 @@ def isConnected(user):
 
     except Exception as e:
         logger.exception('Error: %s', str(e))
-        return False
 
     return response
 
