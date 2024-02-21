@@ -7,6 +7,39 @@ const chat_messages_list = document.getElementById('chat-messages-list')
 const chat_modal = document.getElementById('chat-modal')
 
 
+function logout(){
+    let requestOptions = {
+
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            "X-CSRFToken": getCookie('csrftoken'),
+        },
+        // send 
+        body: JSON.stringify({
+            action: 'logout',
+        })
+    };
+
+    fetch('./', requestOptions)
+
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error('Network response was not ok.');
+        })
+
+        .then(data => {
+            window.location.href = window.location.origin + "/login"
+        })
+
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+        });
+}
+
+
 function changeBackgroundState(action, elements_list){
 
     if (action == 'erase'){
@@ -148,6 +181,7 @@ function redirectRoom(room_data) {
         },
         // send 
         body: JSON.stringify({
+            action: 'redirect_room',
             room_name: room_data.room_name,
             room_code: room_data.room_code
         })

@@ -47,6 +47,13 @@ function setJoinFormsEvents(){
     });
 }
 
+const form_logout = document.getElementById('form-logout')
+form_logout.addEventListener('submit', function (e) {
+
+    e.preventDefault()
+    logout()
+
+})
 
 const form_join = document.getElementById('form-join-room')
 form_join.addEventListener('submit', function (e) {
