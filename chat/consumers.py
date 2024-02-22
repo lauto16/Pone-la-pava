@@ -128,10 +128,16 @@ class ChatConsumer(WebsocketConsumer):
             if response_is_connected['state'] is True:
                 return
             self.room_code = self.scope['url_route']['kwargs']['room_name_code']
+
             room = getRoom(room_code=self.room_code)
 
             # room doesn't exists
             if room is None:
+                return
+
+            # verify if codes are the same (because of the not case sensitive django ORM behavior)
+            if room.code != self.room_code:
+                print("Room code is invalid")
                 return
 
             response_is_banned = isBanned(user=self.user, room=room)
