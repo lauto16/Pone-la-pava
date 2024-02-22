@@ -258,6 +258,7 @@ function joinRoom(message) {
         else if(message.type == 'chat'){
             addMessage(message)
         }
+
     }
 
     joinSocket.onclose = function(event){
@@ -322,6 +323,7 @@ button_close_connection.addEventListener('click', function(){
     } catch (error) {
         console.log(error)
     }
+    chat_modal.style.display = "none"
 })
 
 

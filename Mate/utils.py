@@ -1,4 +1,4 @@
-from chat.models import Room, RoomIntances, Connected, Message, AdmitedUser
+from chat.models import Room, RoomIntances, Connected, Message, Banned
 from django.contrib.auth.models import User
 from html import escape as html_escape
 from glob import escape as py_escape
@@ -105,9 +105,10 @@ def createAdmision(user, room):
         return False
 
 
-def isAdmited(user, room):
+def isBanned(user, room):
     try:
-        AdmitedUser.objects.get(user=user, room=room)
+        # user is banned
+        Banned.objects.get(user=user, room=room)
         return True
     except Exception as e:
         logger.exception('Error: %s', str(e))

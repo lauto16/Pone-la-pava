@@ -8,13 +8,12 @@ from Mate.utils import (verifiedSocket,
                         deleteRoom,
                         updateRoomInstances,
                         addMessage,
-                        isAdmited,
-                        createAdmision)
+                        isBanned)
 from channels.exceptions import DenyConnection, StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
-from glob import escape as py_escape
 from html import escape as html_escape
+from glob import escape as py_escape
 import logging
 
 
@@ -109,14 +108,6 @@ class ChatConsumer(WebsocketConsumer):
             if response_oncreate is False:
                 raise DenyConnection
 
-            room = getRoom(room_code=self.room_code)
-            response_create_admision = createAdmision(user=self.user, room=room)
-
-            # create user admision register so admin can access to his own room
-            if response_create_admision is False:
-                print("Error while creating admin room admision")
-                return
-            
             self.accept()
 
             # return the code to the room creator
@@ -143,10 +134,11 @@ class ChatConsumer(WebsocketConsumer):
             if room is None:
                 return
 
-            response_is_admited = isAdmited(user=self.user, room=room)
+            response_is_banned = isBanned(user=self.user, room=room)
 
-            if response_is_admited is False:
-                print("User is not admited on room")
+            # user is banned of the room
+            if response_is_banned is True:
+                print("User is banned from the room")
                 return
 
             max_connections = room.people_amount
@@ -314,6 +306,13 @@ class ChatConsumer(WebsocketConsumer):
         }))
         # close connection after creating room
         self.create_disconnect(close_code=1000)
+
+    def join_request(self):
+        message = 'El usuario ' + self.user.username + ' quiere entrar a la sala'
+        self.send(text_data=json.dumps({
+            'type': 'join_request',
+            'message': message
+        }))
 
     def get_user(self, scope):
 

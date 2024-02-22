@@ -29,6 +29,6 @@ class Message(models.Model):
     date = models.DateTimeField(auto_now_add=True)
 
 
-class AdmitedUser(models.Model):
+class Banned(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
