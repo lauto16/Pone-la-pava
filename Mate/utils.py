@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from html import escape as html_escape
 from glob import escape as py_escape
 import logging
+import random
+import string
 
 
 logger = logging.getLogger(__name__)
@@ -34,10 +36,13 @@ class verifiedSocket():
     def codeGenerator(self, name):
 
         avalaible = False
-        name_number = 0
+        new_code = ""
+        size = 16
+        chars = string.ascii_uppercase + string.digits + string.ascii_lowercase
 
         while not (avalaible):
-            new_code = name + str(name_number)
+
+            new_code = ''.join(random.choice(chars) for _ in range(size))
             found_rooms = list(Room.objects.filter(code=new_code))
 
             if len(found_rooms) > 0:
