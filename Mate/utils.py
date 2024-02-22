@@ -1,4 +1,4 @@
-from chat.models import Room, RoomIntances, Connected, Message
+from chat.models import Room, RoomIntances, Connected, Message, AdmitedUser
 from django.contrib.auth.models import User
 from html import escape as html_escape
 from glob import escape as py_escape
@@ -94,6 +94,24 @@ class verifiedSocket():
 
     def output(self):
         return self.verified()
+
+
+def createAdmision(user, room):
+    try:
+        AdmitedUser.objects.create(user=user, room=room)
+        return True
+    except Exception as e:
+        logger.exception('Error: %s', str(e))
+        return False
+
+
+def isAdmited(user, room):
+    try:
+        AdmitedUser.objects.get(user=user, room=room)
+        return True
+    except Exception as e:
+        logger.exception('Error: %s', str(e))
+        return False
 
 
 def createRoomRegister(name, code, user, people_amount):

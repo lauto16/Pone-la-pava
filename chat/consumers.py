@@ -7,7 +7,9 @@ from Mate.utils import (verifiedSocket,
                         getRoom,
                         deleteRoom,
                         updateRoomInstances,
-                        addMessage)
+                        addMessage,
+                        isAdmited,
+                        createAdmision)
 from channels.exceptions import DenyConnection, StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
@@ -107,6 +109,14 @@ class ChatConsumer(WebsocketConsumer):
             if response_oncreate is False:
                 raise DenyConnection
 
+            room = getRoom(room_code=self.room_code)
+            response_create_admision = createAdmision(user=self.user, room=room)
+
+            # create user admision register so admin can access to his own room
+            if response_create_admision is False:
+                print("Error while creating admin room admision")
+                return
+            
             self.accept()
 
             # return the code to the room creator
@@ -131,6 +141,12 @@ class ChatConsumer(WebsocketConsumer):
 
             # room doesn't exists
             if room is None:
+                return
+
+            response_is_admited = isAdmited(user=self.user, room=room)
+
+            if response_is_admited is False:
+                print("User is not admited on room")
                 return
 
             max_connections = room.people_amount
