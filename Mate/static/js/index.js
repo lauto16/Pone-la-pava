@@ -131,10 +131,11 @@ function openRoom(room_data){
     chat_modal.style.display = 'block'
     const room_name = document.getElementById('room-name')
     const button_delete_room = document.getElementById('button-delete-room')
-    
+    const delete_room_div = document.getElementById('delete-room')
 
     if(room_data.isOwner === false){
         button_delete_room.style.display = "none"
+        delete_room_div.style.display = "none"
     }
     else{
         button_delete_room.style.display = "block"
@@ -305,6 +306,61 @@ function createRoom(message) {
 }
 
 
+function enumeratePeople(users_array){
+    usernames_container = document.getElementById('people-connected-list')
+    for (let i = 0; i < users_array.length; i++) {
+        const username = users_array[i];
+
+        user_div = document.createElement('div')
+        user_div.setAttribute('class', 'room-user-name')
+        user_div.setAttribute('id', username)
+        usernames_container.appendChild(user_div)
+
+        user_div = document.getElementById(username)
+
+        p_username = document.createElement('p')
+        p_username.setAttribute('class', 'p-username')
+        p_username.textContent = username
+        user_div.appendChild(p_username)
+
+
+    }
+}
+
+
+function getRoomPeople(){
+    let requestOptions = {
+
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            "X-CSRFToken": getCookie('csrftoken'),
+        },
+        // send 
+        body: JSON.stringify({
+            action: 'getConnectedUsers',
+        })
+    };
+
+    fetch('./', requestOptions)
+
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error('Network response was not ok.');
+        })
+
+        .then(data => {
+            enumeratePeople(data.room_connected_users)
+        })
+
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+        });
+}
+
+
 //the following event listeners needs to be here so it can use the defined websocket 
 const button_close_connection = document.getElementById('button-close-connection')
 button_close_connection.addEventListener('click', function(){
@@ -326,6 +382,14 @@ button_close_connection.addEventListener('click', function(){
     chat_modal.style.display = "none"
 })
 
+const form_people_room = document.getElementById('form-people-room')
+form_people_room.addEventListener('submit', function(e){
+    e.preventDefault()
+    people_modal.style.display = 'block'
+    getRoomPeople()
+
+});
+
 
 function setEventDelete(room_code){
     const button_delete_room = document.getElementById('button-delete-room')
@@ -336,3 +400,4 @@ function setEventDelete(room_code){
         document.getElementById(room_id).remove()
     })
 }
+

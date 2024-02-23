@@ -280,3 +280,24 @@ def getMessages(room_code, user):
     except Exception as e:
         logger.exception('Error: %s', str(e))
         return False
+
+
+def isRoomOwner(rooms, room_code):
+    isOwner = False
+    for room in rooms:
+        if room_code == room.code:
+            isOwner = True
+            break
+    return isOwner
+
+
+def getRoomUsers(room_code):
+    room_connections = []
+    try:
+        room_connections = list(Connected.objects.filter(
+            is_connected=True, code_room_conected=room_code))
+
+    except Exception as e:
+        logger.exception('Error: %s', str(e))
+
+    return room_connections

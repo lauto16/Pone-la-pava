@@ -1,5 +1,6 @@
 const modal_create_room = document.getElementById('modal-create-room')
 const modal_join_room = document.getElementById('modal-join-room')
+const people_modal = document.getElementById('people-modal')
 const room_code_strong = document.getElementById('room-code-strong')
 
 
@@ -46,6 +47,7 @@ function setJoinFormsEvents(){
         });
     });
 }
+
 
 const form_logout = document.getElementById('form-logout')
 form_logout.addEventListener('submit', function (e) {
@@ -96,6 +98,11 @@ button_close_create.addEventListener('click', function (e) {
     room_code_strong.textContent = ""
 })
 
+
+const close_people_modal = document.getElementById('close-people-modal')
+close_people_modal.addEventListener('click', function(e){
+    people_modal.style.display = "none"
+})
 
 const button_close_join = document.getElementById('close-modal-join')
 button_close_join.addEventListener('click', function (e) {

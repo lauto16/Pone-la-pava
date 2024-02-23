@@ -392,11 +392,75 @@ body {
     cursor: pointer;
 }
 
+#button-people-room{
+    background-color: transparent;
+    outline: none;
+    border: 0px;
+    width: 100%;
+    height: 100%;
+    transition: ease opacity 0.3s;
+    
+}
+
+#button-people-room:hover{
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+#form-people-room{
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+
+.people-room{
+    width: 5%;
+}
+
+.p-username{
+    font-size: 15px;
+    font-family: 'Kanit', sans-serif;
+    color: #d8c8fd;
+    text-align: center; 
+}
+
+/* MODAL ROOM PEOPLE */
+
+.people-modal{
+    display: none;
+    z-index: 1;
+    width: 30%;
+    height: 40%;
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    transform: translate(-50%, -50%);
+    max-height: 100%;
+    overflow-y: auto;
+    background-color: #161A30;
+    border: 1px solid #231f4b;
+
+}
+
+#room-people-title{
+    font-size: 20px;
+    font-family: 'Kanit', sans-serif;
+    color: #d8c8fd;
+    text-align: center;
+}
 
 #room-name{
     font-size: 20px;
     font-family: 'Kanit', sans-serif;
     color: #d8c8fd;
+}
+
+#people-connected-list{
+    overflow-y: scroll;
+    width: 95%;
+    height: 90%;
 }
 
 .room-messages{
@@ -555,7 +619,8 @@ body {
 
 /* close button */
 #close-modal-create,
-#close-modal-join {
+#close-modal-join,
+#close-people-modal {
     background-color: transparent;
     color: #fff;
     float: right;
@@ -566,8 +631,10 @@ body {
     border: 0px;
 }
 
+
 #close-modal-create,
-#close-modal-join:hover {
+#close-modal-join,
+#close-people-modal:hover {
     opacity: 0.5;
     cursor: pointer;
 }
@@ -838,6 +905,12 @@ body {
 
     }
 
+    .people-room{
+        width: 10%;
+        height: 100%;
+
+    }
+
     .img-disconnect {
         height: 20px;
         aspect-ratio: 1;
@@ -846,8 +919,8 @@ body {
     .delete-room{
         width: 10%;
         height: 100%;
+        margin-right: 15px;
     }
-
 
     .room-code-container{
         display: inline-flex;

@@ -15,12 +15,32 @@
     <input type="hidden" name="" id="img-not-see-src" value="{% static 'img/not-see.png' %}">
     <input type="hidden" name="" id="img-see-src" value="{% static 'img/see.png' %}">
 
+    <div id="people-modal" class="people-modal">
+        <div class="close-modal">
+            <button id="close-people-modal">
+                <strong class="generic-strong">X</strong>
+            </button>
+        </div>
+        <p id="room-people-title">Usuarios conectados en la sala</p>
+        <div id="people-connected-list">
+
+        </div>
+    </div>
+
     <div id="chat-modal" class="chat-modal">
         <div class="room-utils-container">
-            <div class="delete-room">
+            <div class="delete-room" id="delete-room">
                 <button id="button-delete-room">
                     <img class="img-delete-room" src="{% static 'img/delete.png' %}" alt="Eliminar sala">
                 </button>
+            </div>
+            <div class="people-room">
+                <form id="form-people-room" action="">
+                    {% csrf_token %}
+                    <button type="submit" id="button-people-room">
+                        <img class="img-delete-room" src="{% static 'img/people.png' %}" alt="Eliminar sala">
+                    </button>
+                </form>
             </div>
             <div class="p-room-name-container">
                 <p id="room-name"></p>
