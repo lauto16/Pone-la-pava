@@ -419,11 +419,36 @@ body {
     width: 5%;
 }
 
+.room-user-name{
+    display: inline-flex;
+    margin-left: 10%;
+    margin-right: 10%;
+    width: 80%;
+}
+
 .p-username{
     font-size: 15px;
     font-family: 'Kanit', sans-serif;
     color: #d8c8fd;
-    text-align: center; 
+    float: left;
+}
+
+.ban-button{
+    background-color: rgb(255, 66, 66);
+    color: white;
+    margin-left: 10px;
+    outline: none;
+    border: 0;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    transition: ease opacity 0.2s;
+    float: right;
+}
+
+.ban-button:hover{
+    cursor: pointer;
+    opacity: 0.5;
 }
 
 /* MODAL ROOM PEOPLE */

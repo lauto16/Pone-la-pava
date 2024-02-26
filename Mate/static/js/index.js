@@ -307,13 +307,25 @@ function createRoom(message) {
 
 
 function enumeratePeople(users_array){
+
     usernames_container = document.getElementById('people-connected-list')
+    margin_top = "margin-top: 5px;"
+
+    usernames_container.innerHTML = ""
+
     for (let i = 0; i < users_array.length; i++) {
+
+        if (i === 0){
+            margin_top = "margin-top: 20px;"
+        }
+
         const username = users_array[i];
+        ban_button_id = 'ban-button_' + username
 
         user_div = document.createElement('div')
         user_div.setAttribute('class', 'room-user-name')
         user_div.setAttribute('id', username)
+        user_div.setAttribute('style', margin_top)
         usernames_container.appendChild(user_div)
 
         user_div = document.getElementById(username)
@@ -321,8 +333,16 @@ function enumeratePeople(users_array){
         p_username = document.createElement('p')
         p_username.setAttribute('class', 'p-username')
         p_username.textContent = username
-        user_div.appendChild(p_username)
 
+        ban_button = document.createElement('button')
+        ban_button.setAttribute('class', 'ban-button')
+        ban_button.textContent = "X"
+        ban_button.setAttribute('id', ban_button_id)
+
+        user_div.appendChild(p_username)
+        user_div.appendChild(ban_button)
+
+        margin_top = "margin-top: 5px;"
 
     }
 }
