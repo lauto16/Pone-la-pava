@@ -1,4 +1,4 @@
-from Mate.utils import getUser, getRooms, getRoomUsers, updateRoomInstances, getMessages, isConnected, isRoomOwner
+from Mate.utils import getUser, getRoom, getRooms, getRoomUsers, banRoomUser, updateRoomInstances, getMessages, isConnected, isRoomOwner
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -47,7 +47,8 @@ def lobby(request):
                 room_usernames.append(room_user.user.username)
 
             response_data = {
-                'room_connected_users': room_usernames
+                'room_connected_users': room_usernames,
+                'isOwner': isRoomOwner(rooms=rooms, room_code=room_code)
             }
 
             return JsonResponse(response_data)
@@ -61,8 +62,30 @@ def lobby(request):
             return JsonResponse(response)
 
         elif action == 'banUser':
+            connection_data = isConnected(user=user)
+
+            if connection_data['state'] is False:
+                return
+
+            room = getRoom(room_code=connection_data['connected_room_code'])
+
+            if room is None:
+                return
+
+            if isRoomOwner(rooms=rooms, room_code=room.code) is False:
+                return
+
             username = data.get('username')
-            # ban user
+
+            # you cant ban yourself
+            if username == user.username:
+                return
+
+            response_ban_user = banRoomUser(username=username, room=room)
+
+            if response_ban_user is False:
+                return JsonResponse({'success': False})
+
             return JsonResponse({'success': True})
 
     return render(request, 'index.html', {'rooms': rooms})

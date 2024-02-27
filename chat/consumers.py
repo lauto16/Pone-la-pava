@@ -266,10 +266,16 @@ class ChatConsumer(WebsocketConsumer):
 
         # chat message
         else:
+
             if isConnected(self.user)['state'] is False:
                 return
 
-            if getRoom(room_code=connection['connected_room_code']) is None:
+            room = getRoom(room_code=connection['connected_room_code'])
+
+            if room is None:
+                return
+
+            if isBanned(user=self.user, room=room) is True:
                 return
 
             if len(message) < 1:

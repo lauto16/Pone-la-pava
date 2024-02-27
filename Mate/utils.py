@@ -101,10 +101,12 @@ class verifiedSocket():
         return self.verified()
 
 
-def createAdmision(user, room):
+def banRoomUser(username, room):
     try:
-        AdmitedUser.objects.create(user=user, room=room)
+        user = User.objects.get(username=username)
+        Banned.objects.create(user=user, room=room)
         return True
+
     except Exception as e:
         logger.exception('Error: %s', str(e))
         return False

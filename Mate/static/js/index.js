@@ -306,7 +306,7 @@ function createRoom(message) {
 }
 
 
-function enumeratePeople(users_array){
+function enumeratePeople(users_array, isOwner){
 
     usernames_container = document.getElementById('people-connected-list')
     margin_top = "margin-top: 5px;"
@@ -333,52 +333,58 @@ function enumeratePeople(users_array){
         p_username = document.createElement('p')
         p_username.setAttribute('class', 'p-username')
         p_username.textContent = username
-
-        ban_button = document.createElement('button')
-        ban_button.setAttribute('class', 'ban-button')
-        ban_button.textContent = "X"
-        ban_button.setAttribute('id', ban_button_id)
-
         user_div.appendChild(p_username)
-        user_div.appendChild(ban_button)
+
+        if (isOwner){
+            ban_button = document.createElement('button')
+            ban_button.setAttribute('class', 'ban-button')
+            ban_button.textContent = "X"
+            ban_button.setAttribute('id', ban_button_id)
+            user_div.appendChild(ban_button)
+
+            ban_button.addEventListener('click', function(e){
+
+                let requestOptions = {
+    
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        "X-CSRFToken": getCookie('csrftoken'),
+                    },
+                    // send 
+                    body: JSON.stringify({
+                        action: 'banUser',
+                        username: username
+                    })
+                };
+            
+                fetch('./', requestOptions)
+            
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error('Network response was not ok.');
+                    })
+            
+                    .then(data => {
+                        if (data.success){
+                            console.log('Usuario baneado correctamente');
+                        }
+                        else{
+                            console.error('There was an error while banning the user');
+                        }
+                    })
+            
+                    .catch(error => {
+                        console.error('There was a problem with the fetch operation:', error);
+                    });
+            })
+
+        }
 
         margin_top = "margin-top: 5px;"
         
-        ban_button.addEventListener('click', function(e){
-
-            let requestOptions = {
-
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    "X-CSRFToken": getCookie('csrftoken'),
-                },
-                // send 
-                body: JSON.stringify({
-                    action: 'banUser',
-                    username: username
-                })
-            };
-        
-            fetch('./', requestOptions)
-        
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    }
-                    throw new Error('Network response was not ok.');
-                })
-        
-                .then(data => {
-                    if (data.success){
-                        // remove the username div
-                    }
-                })
-        
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error);
-                });
-        })
     }
 }
 
@@ -407,7 +413,7 @@ function getRoomPeople(){
         })
 
         .then(data => {
-            enumeratePeople(data.room_connected_users)
+            enumeratePeople(users_array=data.room_connected_users, isOwner=data.isOwner)
         })
 
         .catch(error => {
