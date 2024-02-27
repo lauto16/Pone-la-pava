@@ -60,4 +60,9 @@ def lobby(request):
             }
             return JsonResponse(response)
 
+        elif action == 'banUser':
+            username = data.get('username')
+            # ban user
+            return JsonResponse({'success': True})
+
     return render(request, 'index.html', {'rooms': rooms})

@@ -343,7 +343,42 @@ function enumeratePeople(users_array){
         user_div.appendChild(ban_button)
 
         margin_top = "margin-top: 5px;"
+        
+        ban_button.addEventListener('click', function(e){
 
+            let requestOptions = {
+
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "X-CSRFToken": getCookie('csrftoken'),
+                },
+                // send 
+                body: JSON.stringify({
+                    action: 'banUser',
+                    username: username
+                })
+            };
+        
+            fetch('./', requestOptions)
+        
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Network response was not ok.');
+                })
+        
+                .then(data => {
+                    if (data.success){
+                        // remove the username div
+                    }
+                })
+        
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                });
+        })
     }
 }
 
@@ -401,6 +436,7 @@ button_close_connection.addEventListener('click', function(){
     }
     chat_modal.style.display = "none"
 })
+
 
 const form_people_room = document.getElementById('form-people-room')
 form_people_room.addEventListener('submit', function(e){
