@@ -1,4 +1,5 @@
 from .auth_utils import *
+from Mate.utils import getUser
 from django.contrib.auth import login
 from Mate.forms import Login, Register
 from django.shortcuts import render, redirect
@@ -57,6 +58,11 @@ def register_view(request):
 
 
 def login_view(request):
+
+    user = getUser(request)
+
+    if user is not None:
+        return redirect('lobby')
 
     error = ""
 

@@ -14,6 +14,7 @@ class verifiedSocket():
 
     def __init__(self, user, room_name, people_amount):
 
+        self.error = None
         self.original_room_name = room_name
         self.room_name = self.cleanRoomName(room_name)
         self.socket_code = self.codeGenerator(name=self.room_name)
@@ -25,13 +26,15 @@ class verifiedSocket():
         room_name = html_escape(py_escape(room_name))
 
         if len(room_name) > 30:
+            self.error = 'El nombre de la sala debe tener 30 caracteres como maximo'
             return None
 
         for char in room_name:
-            if char.isalnum():
-                return room_name.replace(' ', '')
+            if not (char.isalnum()):
+                self.error = "El nombre no puede contener caracteres no alfanumericos"
+                return None
 
-        return None
+        return room_name.replace(' ', '')
 
     def codeGenerator(self, name):
 
@@ -84,10 +87,12 @@ class verifiedSocket():
                 return True
 
             else:
+                self.error = "El maximo numero de salas admitido es 5, elimina alguna!"
                 return None
 
         except Exception as e:
             logger.exception('Error: %s', str(e))
+            self.error = "Ocurrio un error"
             return None
 
     def verified(self):
@@ -182,6 +187,15 @@ def getUser(request):
         user = request.user
 
     return user
+
+
+def getUserByName(username):
+    try:
+        user = User.objects.get(username=username)
+        return user
+    except Exception as e:
+        logger.exception('Error: %s', str(e))
+        return None
 
 
 def getRoomName(room_code):

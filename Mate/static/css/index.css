@@ -562,7 +562,6 @@ body {
     min-height: 20px;
     padding: 8px;
     background-color: #231f4b;
-    color: #d4c9e0;
     font-size: 16px;
     font-family: 'Kanit', sans-serif;
     margin-top: 10px;
@@ -734,46 +733,22 @@ body {
 }
 
 .div-errors {
-    display: inline-flex;
+    display: block;
     font-family: 'Kanit', sans-serif;
-    font-size: 13px;
+    font-size: 15px;
     width: auto;
-    padding-right: 10px;
+    padding: 10px;
     height: auto;
     border-radius: 5px;
     background-color: #f78b94;
     color: #ffffff;
     opacity: 0.9;
     position: fixed;
-    top: 60px;
+    top: 100px;
     left: 50%;
     transform: translate(-50%, -50%);
 }
 
-.errors {
-    float: right;
-}
-
-.errors p {
-    margin-top: 2px;
-}
-
-.exclamation {
-    height: 25px;
-    aspect-ratio: 1;
-    border-radius: 25%;
-    color: rgb(235, 69, 69);
-    background-color: #f36470;
-    float: left;
-    margin-right: 5px;
-    text-align: center;
-    float: left;
-    width: 9%;
-}
-
-.exclamation p {
-    margin-top: 2px;
-}
 
 @media only screen and (max-width: 840px) {
 
@@ -872,26 +847,6 @@ body {
         font-size: 16px;
         color: #fff;
         text-align: center;
-    }
-
-    .div-errors {
-        width: 80%;
-        left: 10%;
-        right: 10%;
-        transform: none;
-        text-align: center;
-    }
-
-    .exclamation {
-        display: none;
-    }
-
-    .errors {
-        float: none;
-    }
-
-    .errors p {
-        margin-top: 2px;
     }
 
     #room-name{

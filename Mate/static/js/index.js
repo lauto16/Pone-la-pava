@@ -161,7 +161,7 @@ function openRoom(room_data){
             isUser: room_messages[key][2],            
         }
 
-        addMessage(message_dict)
+        addMessage(message_dict, color="#d4c9e0")
       });
     
     room_name.textContent = room_data.room_name
@@ -198,8 +198,12 @@ function redirectRoom(room_data) {
         })
 
         .then(data => {
-            openRoom(room_data=data)
-        })
+            if (data.success === true)
+                openRoom(room_data=data)
+            else{
+                errorHandler(error=data.error)
+            }
+            })
 
         .catch(error => {
             console.error('There was a problem with the fetch operation:', error);
@@ -209,25 +213,30 @@ function redirectRoom(room_data) {
 
 
 let joinSocket;
-function addMessage(message) {
+function addMessage(message, color) {
+
+    color_attribute = "color: " + color
 
     const messageDiv = document.createElement('div');
-    messageDiv.className = 'chat-message';
 
     const strongElement = document.createElement('strong');
-    strongElement.textContent = message.username;
     strongElement.className = 'strong-username'
 
     const pElement = document.createElement('p');
+
+    messageDiv.className = 'chat-message';
+    strongElement.textContent = message.username;
     pElement.textContent = message.message;
 
     if (message.isUser === true){
         messageDiv.style.float = 'right'
     }
-
     else{
         messageDiv.style.float = 'left'
     }
+    
+
+    pElement.setAttribute('style', color_attribute)
 
     messageDiv.appendChild(strongElement);
     messageDiv.appendChild(pElement);
@@ -257,7 +266,11 @@ function joinRoom(message) {
         }
         
         else if(message.type == 'chat'){
-            addMessage(message)
+            addMessage(message,  color="#d4c9e0")
+        }
+
+        else if (message.type == 'error'){
+            errorHandler(message.error)
         }
 
     }
@@ -301,6 +314,11 @@ function createRoom(message) {
             room_code_strong.textContent = message.room_code
             addRoom(message)
         }
+
+        else if (message.type == 'error'){
+            errorHandler(message.error)
+        }
+
     }
 
 }
@@ -343,7 +361,6 @@ function enumeratePeople(users_array, isOwner){
             user_div.appendChild(ban_button)
 
             ban_button.addEventListener('click', function(e){
-
                 let requestOptions = {
     
                     method: 'POST',
@@ -364,15 +381,17 @@ function enumeratePeople(users_array, isOwner){
                         if (response.ok) {
                             return response.json();
                         }
-                        throw new Error('Network response was not ok.');
                     })
-            
+
                     .then(data => {
-                        if (data.success){
-                            console.log('Usuario baneado correctamente');
+                        if (data.success === true){
+                            ban_message = "El usuario " + data.banned_username + " ha sido expulsado para siempre de la sala"
+                            joinSocket.send(JSON.stringify({ type: 'message', message: ban_message }));
+                            joinSocket.send(JSON.stringify({ message: '', type: 'ban_user', channel_name: data.banned_channel_name}))
+                            document.getElementById(data.banned_username).remove()
                         }
                         else{
-                            console.error('There was an error while banning the user');
+                            errorHandler(error=data.error)
                         }
                     })
             
@@ -413,7 +432,12 @@ function getRoomPeople(){
         })
 
         .then(data => {
-            enumeratePeople(users_array=data.room_connected_users, isOwner=data.isOwner)
+            if (data.success === true)
+                enumeratePeople(users_array=data.room_connected_users, isOwner=data.isOwner)            
+            else{
+                errorHandler(error=data.error)
+            }
+            
         })
 
         .catch(error => {
@@ -438,7 +462,7 @@ button_close_connection.addEventListener('click', function(){
         ])
 
     } catch (error) {
-        console.log(error)
+        //
     }
     chat_modal.style.display = "none"
 })

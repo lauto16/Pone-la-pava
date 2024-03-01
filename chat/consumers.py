@@ -86,6 +86,7 @@ class ChatConsumer(WebsocketConsumer):
 
             # validation failed
             if validator.output() is False:
+                self.error_handler(error=validator.error, action='connect')
                 raise DenyConnection
 
             self.room_code = validator.socket_code
@@ -106,6 +107,8 @@ class ChatConsumer(WebsocketConsumer):
 
             # creation failed
             if response_oncreate is False:
+                self.error_handler(
+                    error='No se pudo crear la sala', action='connect')
                 raise DenyConnection
 
             self.accept()
@@ -115,7 +118,6 @@ class ChatConsumer(WebsocketConsumer):
                 self.room_code,
                 {
                     'type': 'room_code_message',
-
                 }
 
             )
@@ -125,27 +127,27 @@ class ChatConsumer(WebsocketConsumer):
 
             response_is_connected = isConnected(user=self.user)
 
-            if response_is_connected['state'] is True:
-                return
             self.room_code = self.scope['url_route']['kwargs']['room_name_code']
 
             room = getRoom(room_code=self.room_code)
 
             # room doesn't exists
             if room is None:
-                return
+                self.error_handler(error='La sala no existe', action='connect')
+                raise DenyConnection
 
             # verify if codes are the same (because of the not case sensitive django ORM behavior)
             if room.code != self.room_code:
-                print("Room code is invalid")
-                return
+                self.error_handler(error='La sala no existe', action='connect')
+                raise DenyConnection
 
             response_is_banned = isBanned(user=self.user, room=room)
 
             # user is banned of the room
             if response_is_banned is True:
-                print("User is banned from the room")
-                return
+                self.error_handler(
+                    error='No puedes ingresar a esta sala, has sido expulsado', action='connect')
+                raise DenyConnection
 
             max_connections = room.people_amount
 
@@ -156,7 +158,9 @@ class ChatConsumer(WebsocketConsumer):
 
             # room capacity exceded
             if len(self.channel_layer.groups[self.room_code]) > max_connections:
-                return
+                self.error_handler(
+                    error='No puedes ingresar a esta sala, esta llena', action='connect')
+                raise DenyConnection
 
             self.accept()
 
@@ -172,6 +176,21 @@ class ChatConsumer(WebsocketConsumer):
                 code_room=self.room_code,
                 state=True
             )
+
+    def error_handler(self, error, action):
+        if action == 'connect':
+            self.accept()
+            self.send(text_data=json.dumps({
+                'type': 'error',
+                'error': error
+            }))
+            self.create_disconnect(close_code=1000)
+
+        elif action == 'other':
+            self.send(text_data=json.dumps({
+                'type': 'error',
+                'error': error
+            }))
 
     def disconnect(self, close_code):
 
@@ -202,10 +221,15 @@ class ChatConsumer(WebsocketConsumer):
 
         self.close()
 
+    def ban_disconnect(self, channel_name, close_code):
+        if self.room_code in self.channel_layer.groups:
+            async_to_sync(self.channel_layer.group_discard)(
+                self.room_code,
+                channel_name
+            )
+
     def delete_disconnect(self, data, close_code):
-
         print('disconnecting ', data.user, ' from ', data.code_room_conected)
-
         if data.code_room_conected in self.channel_layer.groups:
             async_to_sync(self.channel_layer.group_discard)(
                 data.code_room_conected,
@@ -245,14 +269,16 @@ class ChatConsumer(WebsocketConsumer):
             connection_data = isConnected(user=self.user)
 
             if connection_data['state'] is False:
-                print("Room does not exists")
+                self.error_handler(
+                    error='No estas conectado a ninguna sala', action='other')
                 return
 
             room_user_id = getRoom(
                 room_code=connection_data['connected_room_code']).user.id
 
             if self.user.id != room_user_id:
-                print("User tried to delete a room that he does not own")
+                self.error_handler(
+                    error='Intentaste eliminar una sala que no es tuya', action='other')
                 return
 
             connection_data, users_connected = deleteRoom(user=self.user)
@@ -264,19 +290,29 @@ class ChatConsumer(WebsocketConsumer):
             updateRoomInstances(user=self.user)
             self.close()
 
+        # ban a user from a room
+        elif message_type == 'ban_user':
+            self.ban_disconnect(
+                close_code=1000, channel_name=text_data_json['channel_name'])
+            return
+
         # chat message
         else:
 
             if isConnected(self.user)['state'] is False:
+                self.error_handler(
+                    error='No estas conectado a ninguna sala', action='other')
                 return
 
             room = getRoom(room_code=connection['connected_room_code'])
 
             if room is None:
-                return
+                self.error_handler(
+                    error='La sala a la que estas conectado ya no existe', action='other')
 
             if isBanned(user=self.user, room=room) is True:
-                return
+                self.error_handler(
+                    error='Fuiste expulsado de la sala, no puedes enviar mensajes', action='other')
 
             if len(message) < 1:
                 return
@@ -301,6 +337,9 @@ class ChatConsumer(WebsocketConsumer):
         message = event['message']
         username = event['username']
         isUser = self.user.username == username
+
+        if isConnected(self.user)['state'] is False:
+            return
 
         self.send(text_data=json.dumps({
             'type': 'chat',
