@@ -182,7 +182,7 @@ function redirectRoom(room_data) {
         },
         // send 
         body: JSON.stringify({
-            action: 'redirect_room',
+            action: 'redirectRoom',
             room_name: room_data.room_name,
             room_code: room_data.room_code
         })

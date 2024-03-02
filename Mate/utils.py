@@ -1,6 +1,7 @@
 from chat.models import Room, RoomIntances, Connected, Message, Banned
 from django.contrib.auth.models import User
 from html import escape as html_escape
+from django.contrib.auth import logout
 from glob import escape as py_escape
 import logging
 import random
@@ -12,20 +13,64 @@ logger = logging.getLogger(__name__)
 
 class verifiedSocket():
 
+    """
+    This class is meant to be used when a user tries to join a WebSocket and some validations and key generation needs to happen.
+
+        -Room name cleaning
+        -Socket code generations
+        -Room user capacity validation
+        -Users room instances validation
+
+    Atributtes:
+        self.error (str, None): Where the last validation error lays 
+        self.original_room_name (str): Original room name that user provided
+        self.room_name (str, None): Cleaned room name
+        self.socket_code (str): Generated socket code
+        self.people_amount (int): Validated room capacity
+        self.room_instances (bool)= self.verifyRoomInstances(user)
+
+    Methods:
+        cleanRoomName(room_name: str, max_length: int): Escapes the name from html and python code,
+          does some length and alnum validations, then deletes all blank spaces
+          and returns the clean room name 
+
+        codeGenerator(size: int): Using ascii (uppercase/lowercase) letters and digits
+          creates a random socket code verifying if it already exists
+
+        setPeopleAmount(people_amount: int/str, default_value: int, max_value: int, min_value: int): First, 
+          it converts the people_amount parameter to int, then verifies if it is between the room capacity limits [min_value, max_value] 
+
+        verifyRoomInstances(user: User, max_rooms: int): Verifies whether user 
+          can or can not create a room based on room instances number 
+
+        verified(): Searches for validation errors on room name and room instances
+
+        output(): Returns the result of verified function
+    """
+
     def __init__(self, user, room_name, people_amount):
 
         self.error = None
         self.original_room_name = room_name
-        self.room_name = self.cleanRoomName(room_name)
-        self.socket_code = self.codeGenerator(name=self.room_name)
-        self.people_amount = self.setPeopleAmount(people_amount=people_amount)
-        self.room_instances = self.verifyRoomInstances(user)
+        self.room_name = self.cleanRoomName(room_name, max_length=30)
+        self.socket_code = self.codeGenerator(size=16)
+        self.people_amount = self.setPeopleAmount(
+            people_amount=people_amount, default_value=8, max_value=15, min_value=2)
+        self.room_instances = self.verifyRoomInstances(user=user, max_rooms=5)
 
-    def cleanRoomName(self, room_name):
+    def cleanRoomName(self, room_name, max_length):
+        """
+        Cleans the room name escaping from html and python code, verifiyng max length, deleting spaces and not alphanumerics characters
+
+        Returns:
+            str: When the cleaning was successfull
+            None: When the cleaning was unsuccessfull
+        """
+
         room_name = str(room_name)
         room_name = html_escape(py_escape(room_name))
 
-        if len(room_name) > 30:
+        if len(room_name) > max_length:
             self.error = 'El nombre de la sala debe tener 30 caracteres como maximo'
             return None
 
@@ -36,11 +81,17 @@ class verifiedSocket():
 
         return room_name.replace(' ', '')
 
-    def codeGenerator(self, name):
+    def codeGenerator(self, size):
+        """
+        Generates a random code with length = size using string.ascii_uppercase, string.ascii_lowercase and string.digits,
+        verifies if the code already exists, in that case, repeats the process
+
+        Returns:
+            str: Generated code
+        """
 
         avalaible = False
         new_code = ""
-        size = 16
         chars = string.ascii_uppercase + string.digits + string.ascii_lowercase
 
         while not (avalaible):
@@ -56,11 +107,17 @@ class verifiedSocket():
 
         return new_code
 
-    def setPeopleAmount(self, people_amount):
+    def setPeopleAmount(self, people_amount, default_value, max_value, min_value):
+        """
+        Sets the room capacity to:
+            -min_value when user provides a number lower than min_value
+            -max_value when user provides a number higher than max_value
+            -default_value when user provides a non-integer value
+            -people_amount when user provides a number between the max_value and min_value limits (including both)
 
-        default_value = 8
-        max_value = 15
-        min_value = 2
+        Returns:
+            int: The normalized people amount value
+        """
 
         if isinstance(people_amount, str):
             for char in people_amount:
@@ -78,31 +135,51 @@ class verifiedSocket():
         else:
             return max_value
 
-    def verifyRoomInstances(self, user):
+    def verifyRoomInstances(self, user, max_rooms):
+        """
+        Verifies whether the user have free room instances or not, based on max_rooms value
+
+        Returns:
+            bool: True if user have enough free room instances
+            bool: False if user do not have enough free room instances or an DB error ocurred
+        """
+
         try:
             number_room_instances = RoomIntances.objects.get(
                 user=user).room_instances
 
-            if number_room_instances < 5:
+            if number_room_instances < max_rooms:
                 return True
 
             else:
                 self.error = "El maximo numero de salas admitido es 5, elimina alguna!"
-                return None
+                return False
 
         except Exception as e:
             logger.exception('Error: %s', str(e))
             self.error = "Ocurrio un error"
-            return None
+            return False
 
     def verified(self):
+        """
+        Check if room name and room instances validations went well
 
-        if self.room_name is None or self.room_instances is None:
+        Returns:
+            bool: Representing if the validations where successfull (True) or not (False)
+        """
+
+        if self.room_name is None or self.room_instances is False:
             return False
 
         return True
 
     def output(self):
+        """
+        Returns the self.verified instance
+
+        Returns:
+            bool: The result of verified instance
+        """
         return self.verified()
 
 
@@ -317,3 +394,124 @@ def getRoomUsers(room_code):
         logger.exception('Error: %s', str(e))
 
     return room_connections
+
+
+def roomRedirection(data, rooms, user):
+    isOwner = False
+    room_code = data.get('room_code')
+    room_name = data.get('room_name')
+
+    messages = getMessages(room_code=room_code, user=user)
+
+    if messages is False:
+        response_data = {
+            'success': False,
+            'error': 'No se pudo cargar los datos de la sala'
+        }
+
+    else:
+        isOwner = isRoomOwner(rooms=rooms, room_code=room_code)
+
+        response_data = {
+            'success': True,
+            'isOwner': isOwner,
+            'room_code': room_code,
+            'room_name': room_name,
+            'room_messages': messages
+        }
+
+    return response_data
+
+
+def getConnected(user, rooms):
+    connected_room_data = isConnected(user=user)
+    room_code = connected_room_data['connected_room_code']
+
+    room_users = getRoomUsers(room_code=room_code)
+    room_usernames = []
+
+    for room_user in room_users:
+        room_usernames.append(room_user.user.username)
+
+    response_data = {
+        'success': True,
+        'room_connected_users': room_usernames,
+        'isOwner': isRoomOwner(rooms=rooms, room_code=room_code)
+    }
+
+    return response_data
+
+
+def logoutUser(request):
+    logout(request)
+
+    response_data = {
+        'success': True
+    }
+
+    return response_data
+
+
+def banUser(user, rooms, data):
+    connection_data = isConnected(user=user)
+
+    if connection_data['state'] is False:
+        response_data = {
+            'success': False,
+            'error': 'No estas conectado a la sala'
+        }
+        return response_data
+
+    room = getRoom(room_code=connection_data['connected_room_code'])
+
+    if room is None:
+        response_data = {
+            'success': False,
+            'error': 'La sala no existe'
+        }
+        return response_data
+
+    if isRoomOwner(rooms=rooms, room_code=room.code) is False:
+        response_data = {
+            'success': False,
+            'error': 'No eres el administrador de la sala'
+        }
+        return response_data
+
+    username = data.get('username')
+
+    # you cant ban yourself
+    if username == user.username:
+        response_data = {
+            'success': False,
+            'error': 'No puedes expulsarte a ti mismo'
+        }
+        return response_data
+
+    response_ban_user = banRoomUser(username=username, room=room)
+
+    if response_ban_user is False:
+        response_data = {
+            'success': False,
+            'error': 'No se pudo expulsar al usuario de la sala'
+        }
+        return response_data
+
+    banned_user = getUserByName(username=username)
+
+    banned_user_connection = isConnected(user=banned_user)
+
+    updateConnection(
+        user=banned_user,
+        channel_name='',
+        code_room='',
+        state=False
+    )
+
+    response_data = {
+        'success': True,
+        'banned_username': username,
+        'banned_channel_name': banned_user_connection['connected_channel_name']
+    }
+
+    return response_data
