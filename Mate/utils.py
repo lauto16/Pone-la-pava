@@ -183,7 +183,18 @@ class verifiedSocket():
         return self.verified()
 
 
-def banRoomUser(username, room):
+def banRoomUser(username: str, room: Room):
+    """
+    Tries to get the user by its username, then creates an Banned register to DB
+
+    Args:
+        username (str): User to be banned usernames 
+        room (Room): Room instance where the user is going to be banned from
+
+    Returns:
+        bool: Transaction was successfull
+    """
+
     try:
         user = User.objects.get(username=username)
         Banned.objects.create(user=user, room=room)
@@ -194,9 +205,19 @@ def banRoomUser(username, room):
         return False
 
 
-def isBanned(user, room):
+def isBanned(user: User, room: Room):
+    """
+    Searches for a Banned DB register where banned user and room matches user and room arguments
+
+    Args:
+        user (User): User probably banned
+        room (Room): Room where user might be banned from
+
+    Returns:
+        bool: Transaction was successfull
+    """
+
     try:
-        # user is banned
         Banned.objects.get(user=user, room=room)
         return True
     except Exception as e:
@@ -204,7 +225,20 @@ def isBanned(user, room):
         return False
 
 
-def createRoomRegister(name, code, user, people_amount):
+def createRoomRegister(name: str, code: str, user: User, people_amount: int):
+    """
+    Creates a Room DB register and adds 1 to user RoomInstances
+
+    Args:
+        name (str): Room name
+        code (str): Room code
+        user (User): Admin user
+        people_amount (int): Room capacity
+
+    Returns:
+        bool: Transaction was successfull
+    """
+
     try:
         Room.objects.create(name=name, code=code,
                             user=user, people_amount=people_amount)
@@ -220,10 +254,22 @@ def createRoomRegister(name, code, user, people_amount):
         return False
 
 
-def updateConnection(user, channel_name, code_room, state):
+def updateConnection(user: User, channel_name: str, code_room: str, state: bool):
+    """
+    Updates the user connection status
+
+    Args:
+        user (User): User whose connection will be updated
+        channel_name (str): WebSocket channel name (unique for each user)
+        code_room (str): The actual room code 
+        state (bool): False if disconnected, True if connected
+
+    Returns:
+        bool: Transaction was successfull
+    """
+
     try:
         user_is_connected = Connected.objects.get(user=user)
-
         user_is_connected.channel_name_connected = channel_name
         user_is_connected.code_room_conected = code_room
         user_is_connected.is_connected = state
@@ -236,7 +282,23 @@ def updateConnection(user, channel_name, code_room, state):
         return False
 
 
-def isConnected(user):
+def isConnected(user: User):
+    """
+    Returns a dictionary containing users connection data
+
+    'state': bool
+    'connected_room_code': str
+    'connected_channel_name': str
+
+    Args:
+        user (User): User whose connection data is going to be queried
+
+    Returns:
+        dict: A dictionary that contains 
+            -Only 'state': bool if user is disconnected
+            -'state': bool, 'connected_room_code': str, 'connected_channel_name': str if user is
+            connected
+    """
 
     response = {
         'state': False
@@ -258,6 +320,17 @@ def isConnected(user):
 
 
 def getUser(request):
+    """
+    Returns the User instance based on the request argument
+
+    Args:
+        request (django request): 
+
+    Returns:
+        None: If user does not exist
+        User: If user exists
+    """
+
     user = None
 
     if request.user.is_authenticated:
@@ -266,7 +339,18 @@ def getUser(request):
     return user
 
 
-def getUserByName(username):
+def getUserByName(username: str):
+    """
+    Returns the User instance based on its username
+
+    Args:
+        username (str): The users name to be queried
+
+    Returns:
+        None: If user does not exist
+        User: If user exists
+    """
+
     try:
         user = User.objects.get(username=username)
         return user
@@ -275,7 +359,18 @@ def getUserByName(username):
         return None
 
 
-def getRoomName(room_code):
+def getRoomName(room_code: str):
+    """
+    Returns the Room instance name based on its code
+
+    Args:
+        room_code (str): The rooms code to be queried 
+
+    Returns:
+        '': If Room does not exist
+        str != '': If Room exists
+    """
+
     try:
         return Room.objects.get(code=room_code).name
     except Exception as e:
@@ -283,7 +378,16 @@ def getRoomName(room_code):
         return ''
 
 
-def getRooms(user):
+def getRooms(user: User):
+    """
+    Asks the DB for all the user's rooms.
+
+    Args:
+        user (User): The user that owns the rooms
+
+    Returns:
+        list: A list that contains all the user's rooms
+    """
 
     rooms = []
     try:
@@ -295,6 +399,17 @@ def getRooms(user):
 
 
 def getRoom(room_code):
+    """
+    Gets a Room instance whose code matches the room_code argument 
+
+    Args:
+        room_code (str): Room's code to be queried
+
+    Returns:
+        Room: If query found a match
+        None: If query didn't find a match
+    """
+
     try:
         return Room.objects.get(code=room_code)
     except Exception as e:
