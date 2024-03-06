@@ -371,3 +371,7 @@ class ChatConsumer(WebsocketConsumer):
         if scope['user'].is_authenticated:
             user = scope['user']
         return user
+
+
+if __name__ == '__main__':
+    pass

@@ -7,7 +7,6 @@ import logging
 import random
 import string
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -398,7 +397,7 @@ def getRooms(user: User):
     return rooms
 
 
-def getRoom(room_code):
+def getRoom(room_code: str):
     """
     Gets a Room instance whose code matches the room_code argument 
 
@@ -417,7 +416,17 @@ def getRoom(room_code):
         return None
 
 
-def deleteRoom(user):
+def deleteRoom(user: User):
+    """
+    Gets the users connected to a room, then removes the Room's DB register
+
+    Args:
+        user (User): User that will be used to query and find the room that he is in
+
+    Returns:
+        Connected, list[Connected]: The user's connection data and a list containing data for users connected to that room 
+        False, None: Representing an error ocurred or there was no data to return
+    """
     try:
         connection_data = Connected.objects.get(user=user)
         users_connected = list(Connected.objects.filter(
@@ -435,16 +444,28 @@ def deleteRoom(user):
         return False, None
 
 
-def updateRoomInstances(user):
+def updateRoomInstances(user: User):
+    """
+    Updates the user's RoomInstances DB register matching it to the total of rooms that user owns, only if 
+    the number of instances is between 5 and 0, including both of them.
+
+
+    Args:
+        user (User): User whose RoomInstances will be update
+
+    Returns:
+        bool: Transaction was successfull
+    """
+
     try:
         user_rooms = list(Room.objects.filter(user=user))
         room_instances = RoomIntances.objects.get(user=user)
 
-        if room_instances.room_instances >= 0:
+        if 5 >= room_instances.room_instances >= 0:
             room_instances.room_instances = len(user_rooms)
             room_instances.save()
         else:
-            room_instances.room_instances = 0
+            room_instances.room_instances = 5
             room_instances.save()
 
         return True
@@ -454,7 +475,18 @@ def updateRoomInstances(user):
         return False
 
 
-def addMessage(content, user, room_code):
+def addMessage(content: str, user: User, room_code: str):
+    """
+    Creates a new Message DB register 
+
+    Args:
+        content (str): The content of the message
+        user (User): The sender user 
+        room_code (str): The room's code where the message is going to be sent
+
+    Returns:
+        bool: Transaction was successfull
+    """
     try:
         room = Room.objects.get(code=room_code)
         Message.objects.create(user=user, content=content, room=room)
@@ -464,7 +496,19 @@ def addMessage(content, user, room_code):
         return False
 
 
-def getMessages(room_code, user):
+def getMessages(room_code: str, user: User):
+    """
+    Revovers all the messages from a room, returning sender username, message content and isOwner(bool)
+
+    Args:
+        room_code (str): The code of the room whose messages will be queried
+        user (User): The user that made the request
+
+    Returns:
+        dict{list}: A dictionary where each key represents
+        a different message, and each message is a list that contains [username, content, isOwner]
+        bool: False if an error ocurred
+    """
 
     user_messages = {}
 
@@ -490,28 +534,48 @@ def getMessages(room_code, user):
         return False
 
 
-def isRoomOwner(rooms, room_code):
-    isOwner = False
+def isRoomOwner(rooms: list, room_code: str):
+    """
+    Compares a given room code to each room.room_code in the rooms array looking for a match
+
+    Args:
+        rooms (list[Room]): A list of Room instances
+        room_code (str): The code of the room that is going to be compared to all the user's rooms codes
+
+    Returns:
+        bool: User is the owner of the room
+    """
+
     for room in rooms:
         if room_code == room.code:
-            isOwner = True
-            break
-    return isOwner
+            return True
+    return False
 
 
-def getRoomUsers(room_code):
-    room_connections = []
-    try:
-        room_connections = list(Connected.objects.filter(
-            is_connected=True, code_room_conected=room_code))
+def roomRedirection(data, rooms: list, user: User):
+    """
+    Returns all the necessary data to redirect the user to a certain room
 
-    except Exception as e:
-        logger.exception('Error: %s', str(e))
+    Args:
+        data (django request): The users request
+        rooms (list[Room]): A list containing all the rooms
+        user (User): The user to get redirected
 
-    return room_connections
+    Returns:
+        dict: When a error ocurred {
+            'success': False (bool), 
+            'error': Error data (str)
+            }
 
+        dict: When transaction was successfull {
+            'success': True (bool),
+            'isOwner' User is the owner of the room (bool),
+            'room_code': The room's code (str),
+            'room_name': The room's code (str),
+            'room_messages': A dict returned by getMessages containing all the rooms messages (dict)
+            }
+    """
 
-def roomRedirection(data, rooms, user):
     isOwner = False
     room_code = data.get('room_code')
     room_name = data.get('room_name')
@@ -538,18 +602,44 @@ def roomRedirection(data, rooms, user):
     return response_data
 
 
-def getConnected(user, rooms):
+def getConnected(user: User, rooms: list):
+    """
+    Asks the database for all the users connected to a room
+
+    Args:
+        user (User): The user that requested the connected users
+        rooms (list): A list that contains all the users Rooms
+
+    Returns:
+        dict: {
+        'success': (bool),
+        'room_connected_users': All the connected users (list[User]),
+        'room_connected_users': All the connected user's names (list[str]),
+        'isOwner': Is the user the room's owner? (bool)
+        }
+    """
     connected_room_data = isConnected(user=user)
     room_code = connected_room_data['connected_room_code']
 
-    room_users = getRoomUsers(room_code=room_code)
+    room_connections = []
     room_usernames = []
 
-    for room_user in room_users:
-        room_usernames.append(room_user.user.username)
+    try:
+        room_connections = list(Connected.objects.filter(
+            is_connected=True, code_room_conected=room_code))
+
+        for connection in room_connections:
+            room_usernames.append(connection.user.username)
+
+    except Exception as e:
+        logger.exception('Error: %s', str(e))
+        # reset the variables so the user dont get a sliced list or a None
+        room_connections = []
+        room_usernames = []
 
     response_data = {
         'success': True,
+        'room_connected_usernames': room_connections,
         'room_connected_users': room_usernames,
         'isOwner': isRoomOwner(rooms=rooms, room_code=room_code)
     }
@@ -558,6 +648,18 @@ def getConnected(user, rooms):
 
 
 def logoutUser(request):
+    """
+    Logs the user out
+
+    Args:
+        request (django request): The user's request
+
+    Returns:
+        dict: {
+            success: (bool)
+            }
+    """
+
     logout(request)
 
     response_data = {
@@ -567,7 +669,28 @@ def logoutUser(request):
     return response_data
 
 
-def banUser(user, rooms, data):
+def validateAdmin(user: User, rooms: list):
+    """
+    The necessary validations to see if a user is admin
+
+    Args:
+        user (User): The user that is going to be validated
+        rooms (list): A list containing all user's rooms
+
+    Returns:
+        dict: If transaction was successfull {
+        'success': True (bool),
+        'room': The room where the user is connected (Room)
+        }
+
+        dict: If transaction was not successfull {
+        'success': False (bool),
+        'error': The error message (str)
+    }
+
+
+    """
+
     connection_data = isConnected(user=user)
 
     if connection_data['state'] is False:
@@ -593,9 +716,44 @@ def banUser(user, rooms, data):
         }
         return response_data
 
+    return {
+        'success': True,
+        'room': room
+    }
+
+
+def banUser(user: User, rooms: list, data):
+    """
+    Firt, it do some admin validations, then, creates a Banned DB register and finally, clears
+    the Connected user's register
+
+
+    Args:
+        user (User): The room's admin
+        rooms (list[Room]): A list containing all the admin's rooms
+        data (django request): A request containing the data from the user that is going to be banned
+
+    Returns:
+        dict: If transaction was successfull {
+        'success': True (bool),
+        'banned_username': The banned user's username (str),
+        'banned_channel_name': The banned user's channel name (str)
+        }
+
+        dict: If transaction was not successfull {
+        'success': False (bool),
+        'error' The error message (str)
+        }
+    """
+
+    validation = validateAdmin(user=user, rooms=rooms)
+
+    if validation['success'] is False:
+        return validation
+
     username = data.get('username')
 
-    # you cant ban yourself
+    # you can't ban yourself
     if username == user.username:
         response_data = {
             'success': False,
@@ -603,7 +761,7 @@ def banUser(user, rooms, data):
         }
         return response_data
 
-    response_ban_user = banRoomUser(username=username, room=room)
+    response_ban_user = banRoomUser(username=username, room=validation['room'])
 
     if response_ban_user is False:
         response_data = {
@@ -630,3 +788,7 @@ def banUser(user, rooms, data):
     }
 
     return response_data
+
+
+if __name__ == '__main__':
+    pass

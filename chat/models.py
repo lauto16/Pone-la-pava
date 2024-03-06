@@ -35,3 +35,7 @@ class Banned(models.Model):
 
     class Meta:
         unique_together = ('room', 'user')
+
+
+if __name__ == '__main__':
+    pass
