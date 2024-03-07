@@ -602,7 +602,7 @@ def roomRedirection(data, rooms: list, user: User):
     return response_data
 
 
-def getConnected(user: User, rooms: list):
+def getConnected(user: User, rooms: list, get_connected: bool):
     """
     Asks the database for all the users connected to a room
 
@@ -637,10 +637,20 @@ def getConnected(user: User, rooms: list):
         room_connections = []
         room_usernames = []
 
+    if get_connected is True:
+
+        response_data = {
+            'success': True,
+            'room_connected_usernames': room_usernames,
+            'room_connected_users': room_connections,
+            'isOwner': isRoomOwner(rooms=rooms, room_code=room_code)
+        }
+
+        return response_data
+
     response_data = {
         'success': True,
-        'room_connected_usernames': room_connections,
-        'room_connected_users': room_usernames,
+        'room_connected_usernames': room_usernames,
         'isOwner': isRoomOwner(rooms=rooms, room_code=room_code)
     }
 

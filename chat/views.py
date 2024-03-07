@@ -43,11 +43,12 @@ def lobby(request):
             return JsonResponse(response_data)
 
         elif action == 'getConnectedUsers':
-            response_data = getConnected(user=user, rooms=rooms)
+            response_data = getConnected(
+                user=user, rooms=rooms, get_connected=False)
             return JsonResponse(response_data)
 
         elif action == 'logout':
-            response_data = logoutUser()
+            response_data = logoutUser(request)
             return JsonResponse(response_data)
 
         elif action == 'banUser':

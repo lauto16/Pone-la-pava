@@ -433,7 +433,7 @@ function getRoomPeople(){
 
         .then(data => {
             if (data.success === true)
-                enumeratePeople(users_array=data.room_connected_users, isOwner=data.isOwner)            
+                enumeratePeople(users_array=data.room_connected_usernames, isOwner=data.isOwner)            
             else{
                 errorHandler(error=data.error)
             }
