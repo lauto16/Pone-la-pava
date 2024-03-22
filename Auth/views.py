@@ -6,6 +6,16 @@ from django.shortcuts import render, redirect
 
 
 def register_view(request):
+    """
+    Sign up view
+
+    Args:
+        request (django request): The user's request
+
+    Returns:
+        HttpResponse: Sign up error data
+        HttpResponseRedirect: When sign up data was valid
+    """
 
     error = []
     respuesta = False
@@ -31,7 +41,7 @@ def register_view(request):
             if valida is False:
                 return render(request, "register.html", {"form": form, "error": error, 'error_bd': respuesta, "datos_error": reason})
 
-            respuesta, reason = comprobarUser(user, email)
+            respuesta, reason = verifyUser(user, email)
 
             if respuesta is False:
                 return render(request, "register.html", {"form": form, "error": error, 'error_bd': respuesta, "datos_error": reason})
@@ -58,6 +68,16 @@ def register_view(request):
 
 
 def login_view(request):
+    """
+    Sign in view
+
+    Args:
+        request (django request): The user's request
+
+    Returns:
+        HttpResponse: Sign in error data
+        HttpResponseRedirect: When sign in data was valid or user is already logged in
+    """
 
     user = getUser(request)
 

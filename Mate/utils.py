@@ -1,4 +1,4 @@
-from chat.models import Room, RoomIntances, Connected, Message, Banned
+from chat.models import Room, RoomInstances, Connected, Message, Banned
 from django.contrib.auth.models import User
 from html import escape as html_escape
 from django.contrib.auth import logout
@@ -144,7 +144,7 @@ class verifiedSocket():
         """
 
         try:
-            number_room_instances = RoomIntances.objects.get(
+            number_room_instances = RoomInstances.objects.get(
                 user=user).room_instances
 
             if number_room_instances < max_rooms:
@@ -242,7 +242,7 @@ def createRoomRegister(name: str, code: str, user: User, people_amount: int):
         Room.objects.create(name=name, code=code,
                             user=user, people_amount=people_amount)
 
-        user_room_instances = RoomIntances.objects.get(user=user)
+        user_room_instances = RoomInstances.objects.get(user=user)
         user_room_instances.room_instances += 1
         user_room_instances.save()
 
@@ -459,7 +459,7 @@ def updateRoomInstances(user: User):
 
     try:
         user_rooms = list(Room.objects.filter(user=user))
-        room_instances = RoomIntances.objects.get(user=user)
+        room_instances = RoomInstances.objects.get(user=user)
 
         if 5 >= room_instances.room_instances >= 0:
             room_instances.room_instances = len(user_rooms)
@@ -679,7 +679,7 @@ def logoutUser(request):
     return response_data
 
 
-def validateAdmin(user: User, rooms: list):
+def SvalidateAdmin(user: User, rooms: list):
     """
     The necessary validations to see if a user is admin
 

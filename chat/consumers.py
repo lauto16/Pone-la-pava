@@ -18,52 +18,22 @@ import logging
 
 
 class ChatConsumer(WebsocketConsumer):
-
-    # documentation
     """
-
-    VARIABLES IMPORTANTES:
-    self.room_code --> codigo para ingresar a una sala
-    self.room_name --> nombre de la sala
-    self.channel_name --> nombre asignado a la instancia webSocket del usuario
-
-
-    connect: recibe 3 tipos de peticiones: 
-        -create -> valida que todo el usuario cumpla los requerimientos
-                   y que los argumentos de creacion sean correctos mediante 
-                   verifiedSocket, crea una nueva sala, la agrega a la BD.
-
-        -join -> valida que el usuario no se encuentre ya en una sala, luego
-        verifica que la sala exista en la base de datos, agrega al usuario a la
-        sala y modifica el registro de Connected (donde se almacena la sala en la
-        que se encuentra el usuario).
-
-
-        -delete -> elimina la sala de la bd, asi como los registros de conexion, 
-        desconecta a todos los usuarios que pudieran estar conectados y modifica el valor
-        de RoomInstances del usuario.
-
-    disconnect: obtiene los datos de la sala actual mediante isConnected y cierra la conexion,
-                luego resetea Connection y hace raise StopConsumer para detener la clase. En caso de
-                que no quede nadie en la sala, se cierra la sala.
-
-
-    receive: recibe los datos del frontend, tiene 2 peticiones:
-            - 'delete_socket' -> desconecta al usuario del socket
-            - 'chat_message' -> recepcion y reenvio de mensajes al front  si el usuario esta 
-                                conectado y el mensaje no esta vacio.
-
-    get_user: obtiene el usuario que envio la peticion.
-
-
-    delete_disconnect: desconecta a todos los usuarios dentro de la sala.
+    A WebsocketConsumer used for the chat rooms
     """
 
     def connect(self):
+        """
+        Handles two types of requests sent by user using url scope:
+            -Create: Create a room
+            -Join: Join a room
+
+        Raises:
+            DenyConnection: When an error ocurred 
+        """
 
         self.action = self.scope['url_route']['kwargs']['action']
         self.user = self.get_user(self.scope)
-        print("USUARIO: ", self.user)
         self.room_code = 0
         logger = logging.getLogger(__name__)
 
@@ -177,7 +147,19 @@ class ChatConsumer(WebsocketConsumer):
                 state=True
             )
 
-    def error_handler(self, error, action):
+    def error_handler(self, error: str, action: str):
+        """
+        Handles two types of actions:
+            -Connect error
+            -Other error
+
+        When action is 'connect', sends the error to frontend and disconnects the user
+        When action is 'other', it only sends the error to frontend 
+
+        Args:
+            error (str): Error description
+            action (str): Error handler error type ('connect' or 'other')
+        """
         if action == 'connect':
             self.accept()
             self.send(text_data=json.dumps({
@@ -193,6 +175,18 @@ class ChatConsumer(WebsocketConsumer):
             }))
 
     def disconnect(self, close_code):
+        """
+        Basic disconnect from webSocket
+
+        Args:
+            close_code (int): ChatConsumer's close code
+
+        Raises:
+            StopConsumer: So the consumer closes
+
+        Returns:
+            None: If the user is already disconnected
+        """
 
         print('disconnecting user from ', self.room_code)
 
@@ -213,6 +207,14 @@ class ChatConsumer(WebsocketConsumer):
         raise StopConsumer
 
     def create_disconnect(self, close_code):
+        """
+        This function gets called when a room is created, so the user doesn't 
+        automatically connect to it
+
+        Args:
+            close_code (int): ChatConsumer's close code
+
+        """
 
         async_to_sync(self.channel_layer.group_discard)(
             self.room_code,
@@ -221,7 +223,15 @@ class ChatConsumer(WebsocketConsumer):
 
         self.close()
 
-    def ban_disconnect(self, channel_name, close_code):
+    def ban_disconnect(self, channel_name: str, close_code):
+        """
+        This function gets called when an user is banned from a room, disconnecting him from it
+
+        Args:
+            channel_name (str): The room's channel name
+            close_code (_type_): ChatConsumer's close code
+
+        """
         if self.room_code in self.channel_layer.groups:
             async_to_sync(self.channel_layer.group_discard)(
                 self.room_code,
@@ -229,6 +239,14 @@ class ChatConsumer(WebsocketConsumer):
             )
 
     def delete_disconnect(self, data, close_code):
+        """
+        This function gets called when a room is removed
+
+        Args:
+            data (Connected): A Connected DB register containing user's connection data
+            close_code (int): ChatConsumer's close code
+
+        """
         print('disconnecting ', data.user, ' from ', data.code_room_conected)
         if data.code_room_conected in self.channel_layer.groups:
             async_to_sync(self.channel_layer.group_discard)(
@@ -240,6 +258,15 @@ class ChatConsumer(WebsocketConsumer):
             user=data.user, channel_name="", code_room="", state=False)
 
     def receive(self, text_data):
+        """
+        Handles all the messages that user can receive, message_type can be:
+            -delete_socket: disconnects user from room
+            -redirect_room: redirect the user to the room
+            -delete: remove a room
+            -ban_user: ban a user from room
+            -others(always treat it like a chat message): chat message
+
+        """
 
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
@@ -333,6 +360,13 @@ class ChatConsumer(WebsocketConsumer):
                        room_code=self.room_code)
 
     def chat_message(self, event):
+        """
+        Sends a chat message to the WebSocket
+
+        Returns:
+            None: If the user is disconnected
+
+        """
 
         message = event['message']
         username = event['username']
@@ -349,24 +383,29 @@ class ChatConsumer(WebsocketConsumer):
         }))
 
     def room_code_message(self, event):
+        """
+        Sends a message containing the room code and name to frontend
 
+        """
         self.send(text_data=json.dumps({
             'type': 'room_created',
             'room_code': self.room_code,
             'room_name': self.room_name
         }))
+
         # close connection after creating room
         self.create_disconnect(close_code=1000)
 
-    def join_request(self):
-        message = 'El usuario ' + self.user.username + ' quiere entrar a la sala'
-        self.send(text_data=json.dumps({
-            'type': 'join_request',
-            'message': message
-        }))
-
     def get_user(self, scope):
+        """
+        Gets the user using scope
 
+        Args:
+            scope (url_scope): The request url scope 
+
+        Returns:
+            User: User
+        """
         user = None
         if scope['user'].is_authenticated:
             user = scope['user']

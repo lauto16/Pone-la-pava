@@ -9,7 +9,7 @@ class Room(models.Model):
     people_amount = models.IntegerField()
 
 
-class RoomIntances(models.Model):
+class RoomInstances(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     room_instances = models.IntegerField()
 
