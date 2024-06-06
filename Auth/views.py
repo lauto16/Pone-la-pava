@@ -3,8 +3,10 @@ from Mate.utils import getUser
 from django.contrib.auth import login
 from Mate.forms import Login, Register
 from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_protect
 
 
+@csrf_protect
 def register_view(request):
     """
     Sign up view
@@ -66,7 +68,7 @@ def register_view(request):
 
     return render(request, "register.html", {"form": form, "error": error, 'error_bd': respuesta, "datos_error": reason})
 
-
+@csrf_protect
 def login_view(request):
     """
     Sign in view
