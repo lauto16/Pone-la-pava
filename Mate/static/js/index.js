@@ -252,7 +252,7 @@ function addMessage(message, color) {
 
 function joinRoom(message) {
 
-    joinSocket = new WebSocket(`ws://localhost:8000/ws/chat/join/${message.room_code}/0`);
+    joinSocket = new WebSocket(`ws://192.168.100.17:8000/ws/chat/join/${message.room_code}/0`);
 
     joinSocket.onopen = function (event) {
         joinSocket.send(JSON.stringify({ type: 'redirect_room', message: 'redirect_room' }));
@@ -306,7 +306,7 @@ function joinRoom(message) {
 let createSocket;
 function createRoom(message) {
 
-    createSocket = new WebSocket(`ws://localhost:8000/ws/chat/create/${message.room_name}/${message.people_amount}`);
+    createSocket = new WebSocket(`ws://192.168.100.17:8000/ws/chat/create/${message.room_name}/${message.people_amount}`);
 
     createSocket.onmessage = function(event){
         const message = JSON.parse(event.data);
