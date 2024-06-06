@@ -11,8 +11,10 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 import json
+from django.views.decorators.csrf import csrf_protect
 
 
+@csrf_protect
 @login_required
 def lobby(request):
     """
